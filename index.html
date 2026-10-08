@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>QtoMate — AI quantity takeoff for construction</title>
+<meta name="description" content="QtoMate turns PDF construction drawings into a traceable, estimator-checked bill of quantities. Early access.">
+<meta property="og:title" content="QtoMate — AI quantity takeoff for construction">
+<meta property="og:description" content="From PDF drawings to a checked bill of quantities. Early access.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://qtomate.dpdns.org/">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23143a8c'/%3E%3Cpath d='M9 16a7 7 0 1 1 14 0 7 7 0 0 1-14 0zm9 4 5 5' fill='none' stroke='%23fff' stroke-width='2.6' stroke-linecap='round'/%3E%3C/svg%3E">
+<style>
+  :root {
+    --paper: #f6f4ee;
+    --sheet: #fffdf8;
+    --ink: #14181f;
+    --muted: #5a6270;
+    --line: #d9d4c7;
+    --blue: #143a8c;
+    --blue-soft: #e6ecf9;
+    --amber: #b4630a;
+    --mono: ui-monospace, "SF Mono", "Cascadia Mono", "Roboto Mono", Menlo, Consolas, monospace;
+    --sans: "Inter", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 17px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--blue); }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 24px; }
+
+  /* header */
+  header { border-bottom: 1px solid var(--line); background: var(--paper); }
+  .bar { display: flex; align-items: center; justify-content: space-between; height: 64px; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 20px; letter-spacing: -0.01em; color: var(--ink); text-decoration: none; }
+  .brand svg { width: 28px; height: 28px; }
+  .tag {
+    font-family: var(--mono); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--amber); border: 1px solid currentColor; padding: 3px 8px; border-radius: 3px;
+  }
+
+  /* hero */
+  .hero { padding-top: 72px; padding-bottom: 56px; }
+  .hero-grid { display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 48px; align-items: center; }
+  .eyebrow { font-family: var(--mono); font-size: 13px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--blue); margin: 0 0 18px; }
+  h1 { font-size: clamp(34px, 5.2vw, 56px); line-height: 1.06; letter-spacing: -0.03em; margin: 0 0 22px; font-weight: 750; }
+  .lede { font-size: 19px; color: var(--muted); max-width: 34em; margin: 0 0 30px; }
+  .cta { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+  .btn {
+    display: inline-block; background: var(--blue); color: #fff; text-decoration: none;
+    font-weight: 600; padding: 13px 22px; border-radius: 6px; border: 1px solid var(--blue);
+  }
+  .btn:hover { background: #0f2e70; }
+  .btn.ghost { background: transparent; color: var(--blue); }
+  .btn.ghost:hover { background: var(--blue-soft); }
+
+  /* drawing figure */
+  .figure { background: var(--sheet); border: 1px solid var(--line); border-radius: 8px; padding: 14px; box-shadow: 0 1px 0 #fff inset, 0 18px 40px -28px rgba(20,24,31,.45); }
+  .figure svg { display: block; width: 100%; height: auto; }
+  .figcap { font-family: var(--mono); font-size: 11.5px; color: var(--muted); display: flex; justify-content: space-between; padding: 10px 4px 0; border-top: 1px solid var(--line); margin-top: 12px; }
+
+  /* sections */
+  section { padding: 56px 0; border-top: 1px solid var(--line); }
+  h2 { font-size: clamp(26px, 3.2vw, 34px); letter-spacing: -0.02em; line-height: 1.15; margin: 0 0 10px; }
+  .sub { color: var(--muted); max-width: 40em; margin: 0 0 34px; }
+  .label { font-family: var(--mono); font-size: 12.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin: 0 0 12px; }
+
+  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; border: 1px solid var(--line); border-radius: 8px; background: var(--sheet); overflow: hidden; }
+  .step { padding: 26px 24px 28px; border-right: 1px solid var(--line); }
+  .step:last-child { border-right: 0; }
+  .num { font-family: var(--mono); font-size: 13px; color: var(--blue); margin-bottom: 14px; }
+  h3 { font-size: 19px; margin: 0 0 8px; letter-spacing: -0.01em; }
+  .step p, .card p { margin: 0; color: var(--muted); font-size: 16px; }
+
+  .cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+  .card { background: var(--sheet); border: 1px solid var(--line); border-radius: 8px; padding: 24px; }
+
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; }
+  .list { list-style: none; padding: 0; margin: 0; }
+  .list li { padding: 12px 0 12px 26px; border-bottom: 1px solid var(--line); position: relative; }
+  .list li:last-child { border-bottom: 0; }
+  .list li::before { content: ""; position: absolute; left: 2px; top: 22px; width: 10px; height: 2px; background: var(--blue); }
+
+  .status { background: var(--blue-soft); border: 1px solid #c5d2f0; border-radius: 8px; padding: 22px 24px; }
+  .status p { margin: 0; }
+  .status strong { color: var(--blue); }
+
+  .contact { text-align: left; }
+  .mail { font-family: var(--mono); font-size: clamp(17px, 2.6vw, 24px); font-weight: 600; word-break: break-all; }
+
+  footer { border-top: 1px solid var(--line); padding: 26px 0 40px; color: var(--muted); font-size: 14px; }
+  footer .wrap { display: flex; flex-wrap: wrap; gap: 8px 24px; justify-content: space-between; }
+
+  @media (max-width: 860px) {
+    .hero { padding-top: 44px; padding-bottom: 40px; }
+    .hero-grid, .two { grid-template-columns: 1fr; gap: 32px; }
+    .steps { grid-template-columns: 1fr; }
+    .step { border-right: 0; border-bottom: 1px solid var(--line); }
+    .step:last-child { border-bottom: 0; }
+    .cards { grid-template-columns: 1fr; }
+    section { padding: 44px 0; }
+  }
+  @media (max-width: 480px) {
+    .wrap { padding: 0 16px; }
+    body { font-size: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap bar">
+    <a class="brand" href="#top" aria-label="QtoMate home">
+      <svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="6" fill="#143a8c"/><path d="M9 16a7 7 0 1 1 14 0 7 7 0 0 1-14 0zm9 4 5 5" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/></svg>
+      QtoMate
+    </a>
+    <span class="tag">Early access</span>
+  </div>
+</header>
+
+<main id="top">
+
+  <div class="wrap hero">
+    <div class="hero-grid">
+      <div>
+        <p class="eyebrow">AI quantity takeoff for construction</p>
+        <h1>From PDF drawings to a checked bill of quantities.</h1>
+        <p class="lede">QtoMate reads construction drawings, measures and counts what is on them, and drafts the bill of quantities. An estimator reviews every line before anything is issued.</p>
+        <div class="cta">
+          <a class="btn" href="mailto:begench@qtomate.dpdns.org?subject=QtoMate%20early%20access">Request early access</a>
+          <a class="btn ghost" href="#how">See how it works</a>
+        </div>
+      </div>
+
+      <div class="figure" role="img" aria-label="Illustration: a floor plan with dimensions on the left and the quantities measured from it on the right.">
+        <svg viewBox="0 0 520 280" xmlns="http://www.w3.org/2000/svg" font-family="ui-monospace, Menlo, Consolas, monospace">
+          <defs>
+            <pattern id="g" width="20" height="20" patternUnits="userSpaceOnUse">
+              <path d="M20 0H0V20" fill="none" stroke="#e7e2d6" stroke-width="1"/>
+            </pattern>
+          </defs>
+          <rect width="520" height="280" fill="#fffdf8"/>
+          <rect width="520" height="280" fill="url(#g)"/>
+
+          <!-- plan -->
+          <g fill="none" stroke="#143a8c" stroke-width="3" stroke-linejoin="miter">
+            <path d="M30 60H250V250H30Z"/>
+            <path d="M150 60V150H250"/>
+            <path d="M30 170H110"/>
+          </g>
+          <g fill="#143a8c" opacity=".12">
+            <rect x="30" y="60" width="120" height="110"/>
+          </g>
+          <!-- door swings -->
+          <g fill="none" stroke="#143a8c" stroke-width="1.2">
+            <path d="M110 170a26 26 0 0 1 26 26"/>
+            <path d="M150 124a22 22 0 0 0 22 -22" />
+          </g>
+          <!-- dimension lines -->
+          <g stroke="#b4630a" stroke-width="1.2" fill="#b4630a" font-size="11">
+            <path d="M30 38H250M30 32V44M250 32V44"/>
+            <text x="140" y="30" text-anchor="middle" stroke="none">11.00 m</text>
+            <path d="M270 60V250M264 60H276M264 250H276"/>
+            <text x="282" y="158" stroke="none" transform="rotate(90 282 158)" text-anchor="middle">9.50 m</text>
+          </g>
+          <g font-size="10.5" fill="#5a6270">
+            <text x="90" y="118" text-anchor="middle">A-101</text>
+            <text x="200" y="110" text-anchor="middle">A-102</text>
+            <text x="150" y="215" text-anchor="middle">A-103</text>
+          </g>
+
+          <!-- quantities table -->
+          <g>
+            <rect x="312" y="60" width="188" height="190" fill="#fffdf8" stroke="#d9d4c7"/>
+            <rect x="312" y="60" width="188" height="26" fill="#143a8c"/>
+            <text x="322" y="77" font-size="11" fill="#fff">ITEM</text>
+            <text x="490" y="77" font-size="11" fill="#fff" text-anchor="end">QTY</text>
+            <g font-size="11" fill="#14181f">
+              <text x="322" y="108">Slab area</text><text x="490" y="108" text-anchor="end">104.5 m²</text>
+              <text x="322" y="134">Ext. walls</text><text x="490" y="134" text-anchor="end">41.0 m</text>
+              <text x="322" y="160">Int. walls</text><text x="490" y="160" text-anchor="end">27.0 m</text>
+              <text x="322" y="186">Doors</text><text x="490" y="186" text-anchor="end">2 no.</text>
+              <text x="322" y="212">Rooms</text><text x="490" y="212" text-anchor="end">3 no.</text>
+            </g>
+            <g stroke="#d9d4c7"><path d="M312 116H500M312 142H500M312 168H500M312 194H500M312 220H500"/></g>
+            <text x="322" y="240" font-size="10" fill="#b4630a">▲ awaiting estimator review</text>
+          </g>
+        </svg>
+        <div class="figcap"><span>ILLUSTRATION · NOT TO SCALE</span><span>SHEET 01</span></div>
+      </div>
+    </div>
+  </div>
+
+  <section id="how">
+    <div class="wrap">
+      <p class="label">How it works</p>
+      <h2>Three steps, one of them human.</h2>
+      <p class="sub">Takeoff is done on every project, takes days by hand, and mistakes in it are expensive. QtoMate takes over the measuring and leaves the judgement to the estimator.</p>
+      <div class="steps">
+        <div class="step">
+          <div class="num">01</div>
+          <h3>Upload the drawing set</h3>
+          <p>Add the PDF sheets for the package you are pricing: plans, sections, schedules.</p>
+        </div>
+        <div class="step">
+          <div class="num">02</div>
+          <h3>QtoMate measures and counts</h3>
+          <p>It reads scales and dimensions, measures lengths and areas, counts elements, and drafts the quantity lines.</p>
+        </div>
+        <div class="step">
+          <div class="num">03</div>
+          <h3>The estimator reviews</h3>
+          <p>Each line points back to the sheet it came from. You check, correct, and approve before it becomes a bill of quantities.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <p class="label">What it does</p>
+      <h2>Built around how estimators actually work.</h2>
+      <p class="sub">The goal is not to replace the quantity surveyor. It is to remove the hours spent clicking around drawings.</p>
+      <div class="cards">
+        <div class="card">
+          <h3>Takeoff from PDF drawings</h3>
+          <p>Lengths, areas and counts measured directly from the sheets you already receive from the designer.</p>
+        </div>
+        <div class="card">
+          <h3>Traceable quantities</h3>
+          <p>Every quantity keeps a reference to its drawing and location, so a reviewer can see where a number came from.</p>
+        </div>
+        <div class="card">
+          <h3>More than one standard</h3>
+          <p>Developed on NRM2 and US imperial takeoff conventions, with regional norm bases planned next.</p>
+        </div>
+        <div class="card">
+          <h3>Your rates, not ours</h3>
+          <p>QtoMate produces quantities and a draft estimate from the rates you provide. It does not invent prices.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap two">
+      <div>
+        <p class="label">Who it is for</p>
+        <h2>Teams that price from drawings.</h2>
+        <ul class="list">
+          <li>Contractors and subcontractors preparing bids</li>
+          <li>Quantity surveyors and estimating departments</li>
+          <li>Cost and planning engineers checking designer quantities</li>
+          <li>Freelance estimators handling several projects at once</li>
+        </ul>
+      </div>
+      <div>
+        <p class="label">About</p>
+        <h2>Made by a construction professional.</h2>
+        <p>QtoMate is being built by Begench Begmuratov, who has more than ten years of experience on construction projects with international contractors and now works in planning, cost estimating and quantity takeoff.</p>
+        <p style="color:var(--muted)">The product is built on Claude, Anthropic's AI model, combined with purpose-built tools for measuring PDF drawings.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <div class="status">
+        <p><strong>Where we are:</strong> QtoMate is in early development. A working prototype exists and has been tested on a real project drawing set. We are looking for a small number of pilot users to shape the first release.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="contact" class="contact">
+    <div class="wrap">
+      <p class="label">Contact</p>
+      <h2>Want to try it on your drawings?</h2>
+      <p class="sub">Write to us with a line about what you estimate, and we will get back to you.</p>
+      <a class="mail" href="mailto:begench@qtomate.dpdns.org">begench@qtomate.dpdns.org</a>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>© 2026 QtoMate</span>
+    <span>AI quantity takeoff and estimating assistant for construction</span>
+  </div>
+</footer>
+
+</body>
+</html>
