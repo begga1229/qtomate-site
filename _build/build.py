@@ -39,7 +39,7 @@ def path_for(lang, from_lang):
 
 def fontface(rel):
     out = []
-    for family, stem, weights in (("Geologica", "geologica", "100 900"), ("JetBrains Mono", "jetbrains-mono", "100 800")):
+    for family, stem, weights in (("Unbounded", "unbounded", "200 900"), ("Onest", "onest", "100 900")):
         for subset, rng in RANGES.items():
             out.append(
                 f"  @font-face {{ font-family: \"{family}\"; font-style: normal; font-display: swap; font-weight: {weights}; "

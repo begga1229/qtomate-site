@@ -50,7 +50,8 @@ S = {
         "QtoMate PDF chizmalaringizni o‘lchaydi va ish hajmlari qaydnomasining qoralamasini tuzadi. Istalgan miqdorni tanlang va aynan nima o‘lchanganini ko‘ring. Smetachi tasdiqlamaguncha hech narsa chiqarilmaydi.",
         "QtoMate PDF çizimlerinizi ölçer ve metraj cetvelinin taslağını hazırlar. Herhangi bir miktarı seçin, tam olarak neyin ölçüldüğünü görün. Keşif mühendisi onaylamadan hiçbir şey yayınlanmaz.",
     ),
-    "cta_demo": ("Try the sample sheet", "Попробовать на примере", "Namunada sinab ko‘rish", "Örnek paftayı dene"),
+    "nav_app": ("Open the app", "Открыть приложение", "Ilovani ochish", "Uygulamayı aç"),
+    "win_title": ("A-101 Ground floor plan, 1:100", "A-101, план первого этажа, 1:100", "A-101, birinchi qavat rejasi, 1:100", "A-101 zemin kat planı, 1:100"),
 
     # ---------- demo ----------
     "plan_aria": (
@@ -293,28 +294,28 @@ S = {
         "QtoMate henüz erken aşamada. Bunu bir logo duvarı göstermek yerine açıkça söylemeyi tercih ediyoruz.",
     ),
     "st1_when": ("Done", "Готово", "Bajarildi", "Tamamlandı"),
-    "st1_h": ("Working prototype", "Рабочий прототип", "Ishlaydigan prototip", "Çalışan prototip"),
+    "st1_h": ("Takeoff workspace", "Рабочая область подсчёта", "Hisoblash ish maydoni", "Metraj çalışma alanı"),
     "st1_p": (
-        "The takeoff engine runs end to end and has been tested on a real project drawing set.",
-        "Модуль подсчёта работает от начала до конца и проверен на комплекте чертежей реального проекта.",
-        "Hisoblash moduli boshidan oxirigacha ishlaydi va haqiqiy loyiha chizmalarida sinovdan o‘tgan.",
-        "Metraj motoru baştan sona çalışıyor ve gerçek bir projenin çizim paketi üzerinde test edildi.",
+        "Open a PDF in your browser, set the scale, measure lengths, areas and counts, approve each line and export to Excel. Without AI drafting, the drawing never leaves your computer.",
+        "Откройте PDF в браузере, задайте масштаб, измерьте длины, площади и количества, утвердите каждую строку и экспортируйте в Excel. Без ИИ-черновика чертёж не покидает ваш компьютер.",
+        "PDF’ni brauzerda oching, masshtabni bering, uzunlik, maydon va sonlarni o‘lchang, har bir qatorni tasdiqlang va Excel’ga eksport qiling. AI qoralamasiz chizma kompyuteringizdan chiqmaydi.",
+        "PDF'i tarayıcınızda açın, ölçeği girin, uzunluk, alan ve adetleri ölçün, her satırı onaylayın ve Excel'e aktarın. Yapay zekâ taslağı kullanmadıkça çizim bilgisayarınızdan çıkmaz.",
     ),
     "st2_when": ("Now", "Сейчас", "Hozir", "Şimdi"),
-    "st2_h": ("Pilot projects", "Пилотные проекты", "Pilot loyihalar", "Pilot projeler"),
+    "st2_h": ("AI drafting, in beta", "ИИ-черновик, бета", "AI qoralama, beta", "Yapay zekâ taslağı, beta"),
     "st2_p": (
-        "We are looking for a small number of estimating teams to run it on their own drawings and tell us where it falls short.",
-        "Мы ищем несколько сметных команд, готовых запустить его на своих чертежах и рассказать, где он не дотягивает.",
-        "Uni o‘z chizmalarida sinab, qayerda kamchiligi borligini aytadigan bir nechta smeta jamoasini qidiryapmiz.",
-        "Aracı kendi çizimlerinde çalıştırıp nerede yetersiz kaldığını bize söyleyecek az sayıda keşif ekibi arıyoruz.",
+        "QtoMate asks Claude to find rooms, walls, doors and windows and adds them as draft lines. During the beta it runs with your own Claude API key. We are looking for estimating teams to try it on real drawings and tell us where it falls short.",
+        "QtoMate просит Claude найти помещения, стены, двери и окна и добавляет их черновыми строками. В бета-версии это работает с вашим собственным ключом Claude API. Мы ищем сметные команды, готовые попробовать его на реальных чертежах и рассказать, где он не дотягивает.",
+        "QtoMate Claude’dan xonalar, devorlar, eshik va derazalarni topishni so‘raydi va ularni qoralama qatorlar sifatida qo‘shadi. Beta davrida u sizning Claude API kalitingiz bilan ishlaydi. Uni haqiqiy chizmalarda sinab, qayerda kamchiligi borligini aytadigan smeta jamoalarini qidiryapmiz.",
+        "QtoMate, Claude'dan odaları, duvarları, kapı ve pencereleri bulmasını ister ve bunları taslak satır olarak ekler. Beta süresince kendi Claude API anahtarınızla çalışır. Aracı gerçek çizimlerde deneyip nerede yetersiz kaldığını söyleyecek keşif ekipleri arıyoruz.",
     ),
     "st3_when": ("Next", "Далее", "Keyin", "Sırada"),
-    "st3_h": ("First release", "Первый релиз", "Birinchi reliz", "İlk sürüm"),
+    "st3_h": ("Hosted AI and first release", "ИИ без своего ключа и первый релиз", "Kalitsiz AI va birinchi reliz", "Anahtarsız yapay zekâ ve ilk sürüm"),
     "st3_p": (
-        "A hosted version shaped by what the pilots teach us. No date is promised yet.",
-        "Облачная версия, сформированная по итогам пилотов. Сроков пока не обещаем.",
-        "Pilotlar natijalari asosida shakllanadigan onlayn versiya. Hozircha sana va’da qilinmaydi.",
-        "Pilotlardan öğrendiklerimizle şekillenecek, çevrimiçi bir sürüm. Henüz tarih sözü vermiyoruz.",
+        "AI drafting without your own key, and a first release shaped by what the pilots teach us. No date is promised yet.",
+        "ИИ-черновик без собственного ключа и первый релиз по итогам пилотов. Сроков пока не обещаем.",
+        "O‘z kalitingizsiz AI qoralama va pilotlar natijalari asosida birinchi reliz. Hozircha sana va’da qilinmaydi.",
+        "Kendi anahtarınız olmadan yapay zekâ taslağı ve pilotlardan öğrendiklerimizle şekillenecek ilk sürüm. Henüz tarih sözü vermiyoruz.",
     ),
 
     # ---------- faq ----------
