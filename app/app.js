@@ -2,8 +2,8 @@
 // Everything runs in the browser. The PDF is never uploaded; only "AI draft"
 // sends an image of the current page to the Anthropic API with the user's own key.
 import * as pdfjsLib from "./vendor/pdf.min.mjs";
-import { LANGS, LANG_NAMES, makeT } from "./i18n.js?v=20261009a";
-import { SnapIndex, buildSnapIndex } from "./snap.js?v=20261009a";
+import { LANGS, LANG_NAMES, makeT } from "./i18n.js?v=20261009b";
+import { SnapIndex, buildSnapIndex } from "./snap.js?v=20261009b";
 
 const VENDOR = new URL("./vendor/", import.meta.url).href;
 pdfjsLib.GlobalWorkerOptions.workerSrc = VENDOR + "pdf.worker.min.mjs";
@@ -398,7 +398,7 @@ function setSnap(on) {
 /** Nearest real point to p: the drawing's own geometry, or a corner of a measurement. */
 function findSnap(p, exclude) {
   const z = state.zoom;
-  const tolPoint = 11 / z, tolLine = 7 / z;
+  const tolPoint = 13 / z, tolLine = 8 / z;
   const best = state.snapIndex ? state.snapIndex.query(p[0], p[1], tolPoint, tolLine) : null;
   let vd = tolPoint, v = null;
   const test = (q) => { const d = dist(p, q); if (d < vd) { vd = d; v = q; } };
