@@ -1,32 +1,32 @@
 <!doctype html>
-<html lang="en">
+<html lang="ru">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light">
-<title>QtoMate | AI quantity takeoff for construction</title>
-<meta name="description" content="QtoMate measures PDF construction drawings and drafts the bill of quantities. Every quantity traces back to the drawing, and an estimator approves every line.">
-<meta property="og:title" content="QtoMate | AI quantity takeoff for construction">
-<meta property="og:description" content="Takeoff that shows its working. Every quantity traces back to the drawing.">
+<title>QtoMate | Подсчёт объёмов работ с помощью ИИ</title>
+<meta name="description" content="QtoMate измеряет строительные чертежи в PDF и составляет ведомость объёмов работ. Каждое количество привязано к чертежу, и каждую строку утверждает сметчик.">
+<meta property="og:title" content="QtoMate | Подсчёт объёмов работ с помощью ИИ">
+<meta property="og:description" content="Подсчёт объёмов, в котором видно каждое измерение. Каждое количество привязано к чертежу.">
 <meta property="og:type" content="website">
-<meta property="og:url" content="https://qtomate.dpdns.org/">
-<link rel="canonical" href="https://qtomate.dpdns.org/">
+<meta property="og:url" content="https://qtomate.dpdns.org/ru/">
+<link rel="canonical" href="https://qtomate.dpdns.org/ru/">
 <link rel="alternate" hreflang="en" href="https://qtomate.dpdns.org/">
 <link rel="alternate" hreflang="ru" href="https://qtomate.dpdns.org/ru/">
 <link rel="alternate" hreflang="uz" href="https://qtomate.dpdns.org/uz/">
 <link rel="alternate" hreflang="tr" href="https://qtomate.dpdns.org/tr/">
 <link rel="alternate" hreflang="x-default" href="https://qtomate.dpdns.org/">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23123c7a'/%3E%3Cpath d='M8 8h16v16H8z M8 17h9V8' fill='none' stroke='%23fff' stroke-width='2.4'/%3E%3Cpath d='M17 17h7v7h-7z' fill='%23ffd54a'/%3E%3C/svg%3E">
-<link rel="preload" href="fonts/geologica-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="../fonts/geologica-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
 <style>
-  @font-face { font-family: "Geologica"; font-style: normal; font-display: swap; font-weight: 100 900; src: url(fonts/geologica-cyrillic-ext-wght-normal.woff2) format("woff2"); unicode-range: U+0460-052F,U+1C80-1C8A,U+20B4,U+2DE0-2DFF,U+A640-A69F,U+FE2E-FE2F; }
-  @font-face { font-family: "Geologica"; font-style: normal; font-display: swap; font-weight: 100 900; src: url(fonts/geologica-cyrillic-wght-normal.woff2) format("woff2"); unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116; }
-  @font-face { font-family: "Geologica"; font-style: normal; font-display: swap; font-weight: 100 900; src: url(fonts/geologica-latin-ext-wght-normal.woff2) format("woff2"); unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF; }
-  @font-face { font-family: "Geologica"; font-style: normal; font-display: swap; font-weight: 100 900; src: url(fonts/geologica-latin-wght-normal.woff2) format("woff2"); unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
-  @font-face { font-family: "JetBrains Mono"; font-style: normal; font-display: swap; font-weight: 100 800; src: url(fonts/jetbrains-mono-cyrillic-ext-wght-normal.woff2) format("woff2"); unicode-range: U+0460-052F,U+1C80-1C8A,U+20B4,U+2DE0-2DFF,U+A640-A69F,U+FE2E-FE2F; }
-  @font-face { font-family: "JetBrains Mono"; font-style: normal; font-display: swap; font-weight: 100 800; src: url(fonts/jetbrains-mono-cyrillic-wght-normal.woff2) format("woff2"); unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116; }
-  @font-face { font-family: "JetBrains Mono"; font-style: normal; font-display: swap; font-weight: 100 800; src: url(fonts/jetbrains-mono-latin-ext-wght-normal.woff2) format("woff2"); unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF; }
-  @font-face { font-family: "JetBrains Mono"; font-style: normal; font-display: swap; font-weight: 100 800; src: url(fonts/jetbrains-mono-latin-wght-normal.woff2) format("woff2"); unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
+  @font-face { font-family: "Geologica"; font-style: normal; font-display: swap; font-weight: 100 900; src: url(../fonts/geologica-cyrillic-ext-wght-normal.woff2) format("woff2"); unicode-range: U+0460-052F,U+1C80-1C8A,U+20B4,U+2DE0-2DFF,U+A640-A69F,U+FE2E-FE2F; }
+  @font-face { font-family: "Geologica"; font-style: normal; font-display: swap; font-weight: 100 900; src: url(../fonts/geologica-cyrillic-wght-normal.woff2) format("woff2"); unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116; }
+  @font-face { font-family: "Geologica"; font-style: normal; font-display: swap; font-weight: 100 900; src: url(../fonts/geologica-latin-ext-wght-normal.woff2) format("woff2"); unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF; }
+  @font-face { font-family: "Geologica"; font-style: normal; font-display: swap; font-weight: 100 900; src: url(../fonts/geologica-latin-wght-normal.woff2) format("woff2"); unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
+  @font-face { font-family: "JetBrains Mono"; font-style: normal; font-display: swap; font-weight: 100 800; src: url(../fonts/jetbrains-mono-cyrillic-ext-wght-normal.woff2) format("woff2"); unicode-range: U+0460-052F,U+1C80-1C8A,U+20B4,U+2DE0-2DFF,U+A640-A69F,U+FE2E-FE2F; }
+  @font-face { font-family: "JetBrains Mono"; font-style: normal; font-display: swap; font-weight: 100 800; src: url(../fonts/jetbrains-mono-cyrillic-wght-normal.woff2) format("woff2"); unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116; }
+  @font-face { font-family: "JetBrains Mono"; font-style: normal; font-display: swap; font-weight: 100 800; src: url(../fonts/jetbrains-mono-latin-ext-wght-normal.woff2) format("woff2"); unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF; }
+  @font-face { font-family: "JetBrains Mono"; font-style: normal; font-display: swap; font-weight: 100 800; src: url(../fonts/jetbrains-mono-latin-wght-normal.woff2) format("woff2"); unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
   :root {
     --prussian: #123c7a;
     --prussian-deep: #0b2a57;
@@ -205,7 +205,7 @@
   .chain li:last-child { padding-right: 0; }
   .chain li:last-child .endtick { position: absolute; right: 0; top: 0; width: 1.5px; height: 19px; background: var(--ink); }
   .chain .stepno { font-family: var(--mono); font-size: 13px; color: var(--prussian); }
-  .chain .stepno::before { content: "Step " counter(step); }
+  .chain .stepno::before { content: "Шаг " counter(step); }
   .chain h3 { margin-top: 8px; font-size: 21px; font-weight: 600; letter-spacing: -0.015em; line-height: 1.2; }
   .chain p { margin-top: 10px; color: var(--ink-soft); font-size: 16px; }
   .chain li.human h3 { color: var(--redline); }
@@ -315,36 +315,36 @@
 </style>
 </head>
 <body>
-<a class="skip" href="#main">Skip to content</a>
+<a class="skip" href="#main">Перейти к содержанию</a>
 
 <div class="blueprint">
   <header class="shell topbar">
-    <a class="brand" href="#top" aria-label="QtoMate home">
+    <a class="brand" href="#top" aria-label="QtoMate, главная">
       <svg viewBox="0 0 32 32" aria-hidden="true"><rect x="1" y="1" width="30" height="30" fill="none" stroke="#fff" stroke-width="2"/><path d="M8 8h16v16H8z M8 17h9V8" fill="none" stroke="#fff" stroke-width="2"/><path d="M17 17h7v7h-7z" fill="#ffd54a"/></svg>
       QtoMate
     </a>
-    <nav class="nav" aria-label="Main">
-      <a class="navlink" href="#how">How it works</a>
-      <a class="navlink" href="#line">What you get</a>
-      <a class="navlink" href="#status">Status</a>
-      <a class="navlink" href="#faq">Questions</a>
-      <span class="langs" role="group" aria-label="Language"><a href="./" lang="en" hreflang="en" title="English" aria-current="true">EN</a><a href="ru/" lang="ru" hreflang="ru" title="Русский">RU</a><a href="uz/" lang="uz" hreflang="uz" title="O‘zbekcha">UZ</a><a href="tr/" lang="tr" hreflang="tr" title="Türkçe">TR</a></span>
-      <a class="button button-outline-light" href="#contact">Request early access</a>
+    <nav class="nav" aria-label="Основное меню">
+      <a class="navlink" href="#how">Как это работает</a>
+      <a class="navlink" href="#line">Что вы получаете</a>
+      <a class="navlink" href="#status">Статус</a>
+      <a class="navlink" href="#faq">Вопросы</a>
+      <span class="langs" role="group" aria-label="Язык"><a href="../" lang="en" hreflang="en" title="English">EN</a><a href="../ru/" lang="ru" hreflang="ru" title="Русский" aria-current="true">RU</a><a href="../uz/" lang="uz" hreflang="uz" title="O‘zbekcha">UZ</a><a href="../tr/" lang="tr" hreflang="tr" title="Türkçe">TR</a></span>
+      <a class="button button-outline-light" href="#contact">Запросить ранний доступ</a>
     </nav>
   </header>
 
   <main id="main">
   <div class="shell hero" id="top">
-    <h1>Takeoff that shows its working.</h1>
-    <p class="lede">QtoMate measures your PDF drawings and drafts the bill of quantities. Select any quantity to see exactly what was measured. Nothing is issued until an estimator approves it.</p>
+    <h1>Подсчёт объёмов, в котором видно каждое измерение.</h1>
+    <p class="lede">QtoMate измеряет ваши чертежи в PDF и составляет черновик ведомости объёмов работ. Выберите любое количество и посмотрите, что именно было измерено. Ничего не выдаётся, пока сметчик не утвердит.</p>
     <div class="actions">
-      <a class="button button-yellow" href="#contact">Request early access</a>
-      <a class="button button-outline-light" href="#demo">Try the sample sheet</a>
+      <a class="button button-yellow" href="#contact">Запросить ранний доступ</a>
+      <a class="button button-outline-light" href="#demo">Попробовать на примере</a>
     </div>
 
-    <div class="demo" id="demo" data-sel="area" data-t-progress="{done} of {total} lines approved" data-t-all="All {total} lines approved" data-t-approve="Approve line" data-t-approved="Approved">
+    <div class="demo" id="demo" data-sel="area" data-t-progress="Утверждено строк: {done} из {total}" data-t-all="Все {total} строк утверждены" data-t-approve="Утвердить строку" data-t-approved="Утверждено">
       <div class="plan">
-        <svg viewBox="0 0 610 440" role="img" aria-label="Sample floor plan, 12 by 8 metres, with three rooms. Selecting a line in the bill of quantities highlights the matching elements on the plan.">
+        <svg viewBox="0 0 610 440" role="img" aria-label="Пример плана этажа 12 на 8 метров с тремя помещениями. При выборе строки ведомости на плане подсвечиваются соответствующие элементы.">
           <!-- grid axes -->
           <g class="axis">
             <path d="M70 34V396M350 34V396M550 34V396"/>
@@ -364,12 +364,12 @@
             <rect class="room" x="70" y="60" width="280" height="320"/>
             <rect class="room" x="350" y="60" width="200" height="180"/>
             <rect class="room" x="350" y="240" width="200" height="140"/>
-            <text class="roomname" x="210" y="216" text-anchor="middle">Living</text>
-            <text class="roomarea" x="210" y="234" text-anchor="middle">56.0 m²</text>
-            <text class="roomname" x="450" y="146" text-anchor="middle">Bedroom</text>
-            <text class="roomarea" x="450" y="164" text-anchor="middle">22.5 m²</text>
-            <text class="roomname" x="450" y="306" text-anchor="middle">Kitchen</text>
-            <text class="roomarea" x="450" y="324" text-anchor="middle">17.5 m²</text>
+            <text class="roomname" x="210" y="216" text-anchor="middle">Гостиная</text>
+            <text class="roomarea" x="210" y="234" text-anchor="middle">56,0 м²</text>
+            <text class="roomname" x="450" y="146" text-anchor="middle">Спальня</text>
+            <text class="roomarea" x="450" y="164" text-anchor="middle">22,5 м²</text>
+            <text class="roomname" x="450" y="306" text-anchor="middle">Кухня</text>
+            <text class="roomarea" x="450" y="324" text-anchor="middle">17,5 м²</text>
           </g>
 
           <!-- external walls -->
@@ -400,65 +400,65 @@
           <!-- dimensions -->
           <g>
             <path class="thin" d="M70 412H550M70 404V420M550 404V420"/>
-            <text class="dimtext" x="310" y="432" text-anchor="middle">12.00 m</text>
+            <text class="dimtext" x="310" y="432" text-anchor="middle">12,00 м</text>
             <path class="thin" d="M582 60V380M574 60H590M574 380H590"/>
-            <text class="dimtext" x="598" y="220" text-anchor="middle" transform="rotate(90 598 220)">8.00 m</text>
+            <text class="dimtext" x="598" y="220" text-anchor="middle" transform="rotate(90 598 220)">8,00 м</text>
           </g>
         </svg>
       </div>
 
       <div class="boq">
         <div class="boq-head">
-          <h2>Bill of quantities, draft</h2>
-          <p>Source: sheet A-101, ground floor plan, 1:100</p>
+          <h2>Ведомость объёмов работ, черновик</h2>
+          <p>Источник: лист A-101, план первого этажа, 1:100</p>
         </div>
         <ul class="boq-rows">
-          <li><button class="boq-row" type="button" data-key="area" aria-pressed="true"><span class="mark" aria-hidden="true"></span><span class="name">Floor area<span class="note">3 rooms, to wall centrelines</span></span><span class="qty">96.0 m²</span></button></li>
-          <li><button class="boq-row" type="button" data-key="ext" aria-pressed="false"><span class="mark" aria-hidden="true"></span><span class="name">External walls<span class="note">Perimeter, grid A–C / 1–3</span></span><span class="qty">40.0 m</span></button></li>
-          <li><button class="boq-row" type="button" data-key="int" aria-pressed="false"><span class="mark" aria-hidden="true"></span><span class="name">Internal partitions<span class="note">2 runs</span></span><span class="qty">13.0 m</span></button></li>
-          <li><button class="boq-row" type="button" data-key="doors" aria-pressed="false"><span class="mark" aria-hidden="true"></span><span class="name">Doors<span class="note">1 external, 2 internal</span></span><span class="qty">3 no.</span></button></li>
-          <li><button class="boq-row" type="button" data-key="windows" aria-pressed="false"><span class="mark" aria-hidden="true"></span><span class="name">Windows<span class="note">Counted on grid 1 and C</span></span><span class="qty">4 no.</span></button></li>
+          <li><button class="boq-row" type="button" data-key="area" aria-pressed="true"><span class="mark" aria-hidden="true"></span><span class="name">Площадь пола<span class="note">3 помещения, по осям стен</span></span><span class="qty">96,0 м²</span></button></li>
+          <li><button class="boq-row" type="button" data-key="ext" aria-pressed="false"><span class="mark" aria-hidden="true"></span><span class="name">Наружные стены<span class="note">Периметр, оси A–C / 1–3</span></span><span class="qty">40,0 м</span></button></li>
+          <li><button class="boq-row" type="button" data-key="int" aria-pressed="false"><span class="mark" aria-hidden="true"></span><span class="name">Внутренние перегородки<span class="note">2 участка</span></span><span class="qty">13,0 м</span></button></li>
+          <li><button class="boq-row" type="button" data-key="doors" aria-pressed="false"><span class="mark" aria-hidden="true"></span><span class="name">Двери<span class="note">1 наружная, 2 внутренние</span></span><span class="qty">3 шт.</span></button></li>
+          <li><button class="boq-row" type="button" data-key="windows" aria-pressed="false"><span class="mark" aria-hidden="true"></span><span class="name">Окна<span class="note">Подсчитаны по осям 1 и C</span></span><span class="qty">4 шт.</span></button></li>
         </ul>
         <div class="boq-foot">
-          <span class="state" id="boq-state" aria-live="polite">0 of 5 lines approved</span>
-          <button class="button button-blue" type="button" id="approve">Approve line</button>
+          <span class="state" id="boq-state" aria-live="polite">Утверждено строк: 0 из 5</span>
+          <button class="button button-blue" type="button" id="approve">Утвердить строку</button>
         </div>
       </div>
     </div>
-    <p class="demo-caption">Illustrative sample, not a real project. Select a line to see what was measured, then approve it the way an estimator would.</p>
+    <p class="demo-caption">Условный пример, не реальный проект. Выберите строку, чтобы увидеть, что было измерено, и утвердите её, как это сделал бы сметчик.</p>
   </div>
   </main>
 </div>
 
 <section class="band" aria-labelledby="why-h">
   <div class="shell">
-    <h2 id="why-h">Measuring is the slowest part of pricing a job.</h2>
-    <p class="intro">Every tender starts with someone tracing drawings and typing numbers into a spreadsheet. It takes days, and a single missed wall can decide whether the job makes money.</p>
+    <h2 id="why-h">Измерения отнимают больше всего времени при расчёте стоимости.</h2>
+    <p class="intro">Каждый тендер начинается с того, что кто-то обводит чертежи и вбивает цифры в таблицу. На это уходят дни, а одна пропущенная стена может решить, будет ли объект прибыльным.</p>
     <table class="compare">
       <colgroup><col style="width:20%"><col style="width:40%"><col style="width:40%"></colgroup>
       <thead>
-        <tr><th></th><th scope="col">By hand</th><th scope="col" class="ours">With QtoMate</th></tr>
+        <tr><th></th><th scope="col">Вручную</th><th scope="col" class="ours">С QtoMate</th></tr>
       </thead>
       <tbody>
         <tr>
-          <th scope="row">Measuring</th>
-          <td data-label="By hand">The estimator traces every sheet, element by element.</td>
-          <td class="ours" data-label="With QtoMate">QtoMate reads scales and dimensions and measures the sheets for you.</td>
+          <th scope="row">Измерение</th>
+          <td data-label="Вручную">Сметчик обводит каждый лист, элемент за элементом.</td>
+          <td class="ours" data-label="С QtoMate">QtoMate считывает масштабы и размеры и измеряет листы за вас.</td>
         </tr>
         <tr>
-          <th scope="row">Checking</th>
-          <td data-label="By hand">A second person re-measures, or nobody does.</td>
-          <td class="ours" data-label="With QtoMate">Each quantity is tied to the place it came from, so a check takes one look.</td>
+          <th scope="row">Проверка</th>
+          <td data-label="Вручную">Второй человек перемеряет заново, либо никто.</td>
+          <td class="ours" data-label="С QtoMate">Каждое количество привязано к месту на чертеже, поэтому проверка занимает один взгляд.</td>
         </tr>
         <tr>
-          <th scope="row">Revisions</th>
-          <td data-label="By hand">A new drawing revision means starting large parts again.</td>
-          <td class="ours" data-label="With QtoMate">Re-run the changed sheets and review only the lines that moved.</td>
+          <th scope="row">Изменения</th>
+          <td data-label="Вручную">Новая редакция чертежей означает, что большую часть работы надо начинать заново.</td>
+          <td class="ours" data-label="С QtoMate">Запустите изменённые листы повторно и проверьте только те строки, которые изменились.</td>
         </tr>
         <tr>
-          <th scope="row">Responsibility</th>
-          <td data-label="By hand">With the estimator.</td>
-          <td class="ours" data-label="With QtoMate">Still with the estimator. Nothing leaves without approval.</td>
+          <th scope="row">Ответственность</th>
+          <td data-label="Вручную">На сметчике.</td>
+          <td class="ours" data-label="С QtoMate">По-прежнему на сметчике. Без утверждения ничего не уходит.</td>
         </tr>
       </tbody>
     </table>
@@ -467,27 +467,27 @@
 
 <section class="band" id="how" aria-labelledby="how-h">
   <div class="shell">
-    <h2 id="how-h">From drawing set to bill of quantities in four steps.</h2>
+    <h2 id="how-h">От комплекта чертежей до ведомости объёмов за четыре шага.</h2>
     <ol class="chain">
       <li>
         <span class="stepno"></span>
-        <h3>Upload the drawing set</h3>
-        <p>Add the PDF sheets for the package you are pricing: plans, sections and schedules.</p>
+        <h3>Загрузите комплект чертежей</h3>
+        <p>Добавьте листы PDF по оцениваемому разделу: планы, разрезы и спецификации.</p>
       </li>
       <li>
         <span class="stepno"></span>
-        <h3>Sheets are read and scaled</h3>
-        <p>QtoMate identifies each sheet, its scale and its dimensions before measuring anything.</p>
+        <h3>Листы распознаются, масштаб определяется</h3>
+        <p>Прежде чем что-либо измерять, QtoMate определяет каждый лист, его масштаб и размеры.</p>
       </li>
       <li>
         <span class="stepno"></span>
-        <h3>Elements are measured</h3>
-        <p>Lengths, areas and counts are taken off and grouped into draft quantity lines.</p>
+        <h3>Элементы измеряются</h3>
+        <p>Длины, площади и количества снимаются с чертежа и группируются в черновые строки ведомости.</p>
       </li>
       <li class="human">
         <span class="stepno"></span>
-        <h3>An estimator approves</h3>
-        <p>You check each line against its source, correct what needs correcting, and export.</p>
+        <h3>Сметчик утверждает</h3>
+        <p>Вы сверяете каждую строку с источником, исправляете то, что нужно, и экспортируете.</p>
         <span class="endtick" aria-hidden="true"></span>
       </li>
     </ol>
@@ -496,36 +496,36 @@
 
 <section class="band" id="line" aria-labelledby="line-h">
   <div class="shell">
-    <h2 id="line-h">Every line carries its own evidence.</h2>
-    <p class="intro">A quantity on its own is just a number. QtoMate keeps what a reviewer needs next to it.</p>
+    <h2 id="line-h">Каждая строка несёт своё обоснование.</h2>
+    <p class="intro">Количество само по себе просто цифра. QtoMate хранит рядом с ним всё, что нужно проверяющему.</p>
     <div class="anatomy">
-      <div class="record" role="group" aria-label="Example quantity record">
-        <div class="record-title"><strong>Line 3, internal partitions</strong><span>Sample record</span></div>
+      <div class="record" role="group" aria-label="Пример записи о количестве">
+        <div class="record-title"><strong>Строка 3, внутренние перегородки</strong><span>Пример записи</span></div>
         <dl>
-          <dt>Quantity</dt><dd class="qty-big">13.0 m</dd>
-          <dt>Measured as</dt><dd>Centreline length, 2 runs: 8.0 m and 5.0 m</dd>
-          <dt>Source</dt><dd>Sheet A-101, ground floor plan, grid B/1–3 and B–C/2</dd>
-          <dt>Scale used</dt><dd>1:100, confirmed against a written dimension</dd>
-          <dt>Rate</dt><dd>From your rate library</dd>
-          <dt>Status</dt><dd class="needs">Needs estimator review</dd>
+          <dt>Количество</dt><dd class="qty-big">13,0 м</dd>
+          <dt>Способ измерения</dt><dd>Длина по оси, 2 участка: 8,0 м и 5,0 м</dd>
+          <dt>Источник</dt><dd>Лист A-101, план первого этажа, оси B/1–3 и B–C/2</dd>
+          <dt>Масштаб</dt><dd>1:100, сверен с проставленным размером</dd>
+          <dt>Расценка</dt><dd>Из вашей базы расценок</dd>
+          <dt>Статус</dt><dd class="needs">Требуется проверка сметчика</dd>
         </dl>
       </div>
       <ul class="points">
         <li>
-          <h3>Where it came from</h3>
-          <p>Each quantity points to its sheet and location, so nobody has to hunt through the set to verify it.</p>
+          <h3>Откуда взято</h3>
+          <p>Каждое количество указывает на свой лист и место на нём, поэтому для проверки не нужно перерывать весь комплект.</p>
         </li>
         <li>
-          <h3>How it was measured</h3>
-          <p>The method and the scale are recorded with the number, which is what makes a check quick.</p>
+          <h3>Как измерено</h3>
+          <p>Вместе с цифрой записываются способ и масштаб, поэтому проверка проходит быстро.</p>
         </li>
         <li>
-          <h3>Your rates, not ours</h3>
-          <p>QtoMate produces quantities and prices them only from rates you supply. It does not invent prices.</p>
+          <h3>Ваши расценки, не наши</h3>
+          <p>QtoMate считает объёмы и оценивает их только по расценкам, которые даёте вы. Цены он не придумывает.</p>
         </li>
         <li>
-          <h3>A person signs off</h3>
-          <p>Draft lines stay drafts until an estimator approves them. That step cannot be skipped.</p>
+          <h3>Подпись ставит человек</h3>
+          <p>Черновые строки остаются черновиками, пока их не утвердит сметчик. Этот шаг нельзя пропустить.</p>
         </li>
       </ul>
     </div>
@@ -534,28 +534,28 @@
 
 <section class="band" aria-labelledby="scope-h">
   <div class="shell">
-    <h2 id="scope-h">What it works with today.</h2>
+    <h2 id="scope-h">С чем он работает сегодня.</h2>
     <div class="scope">
       <div>
-        <h3>Goes in</h3>
+        <h3>На входе</h3>
         <ul>
-          <li>PDF drawing sets<small>Plans, sections, schedules</small></li>
-          <li>Your rate library<small>Optional, for a priced draft</small></li>
+          <li>Комплекты чертежей в PDF<small>Планы, разрезы, спецификации</small></li>
+          <li>Ваша база расценок<small>По желанию, для черновика с ценами</small></li>
         </ul>
       </div>
       <div>
-        <h3>Measurement conventions</h3>
+        <h3>Правила подсчёта</h3>
         <ul>
-          <li>NRM2<small>Metric</small></li>
-          <li>US imperial takeoff<small>Feet and inches</small></li>
-          <li>Regional norm bases<small>Planned next</small></li>
+          <li>NRM2<small>Метрическая система</small></li>
+          <li>Подсчёт в американской системе мер<small>Футы и дюймы</small></li>
+          <li>Региональные нормативные базы<small>В планах</small></li>
         </ul>
       </div>
       <div>
-        <h3>Comes out</h3>
+        <h3>На выходе</h3>
         <ul>
-          <li>Bill of quantities<small>With source references per line</small></li>
-          <li>Excel export<small>For your own estimating workbook</small></li>
+          <li>Ведомость объёмов работ<small>Со ссылкой на источник в каждой строке</small></li>
+          <li>Экспорт в Excel<small>Для вашей собственной сметной книги</small></li>
         </ul>
       </div>
     </div>
@@ -564,23 +564,23 @@
 
 <section class="band" id="status" aria-labelledby="status-h">
   <div class="shell">
-    <h2 id="status-h">Where the product is right now.</h2>
-    <p class="intro">QtoMate is early. We would rather tell you that plainly than show you a logo wall.</p>
+    <h2 id="status-h">На каком этапе продукт сейчас.</h2>
+    <p class="intro">QtoMate на раннем этапе. Мы предпочитаем сказать об этом прямо, а не показывать стену логотипов.</p>
     <ol class="stages">
       <li class="is-done">
-        <span class="when">Done</span>
-        <h3>Working prototype</h3>
-        <p>The takeoff engine runs end to end and has been tested on a real project drawing set.</p>
+        <span class="when">Готово</span>
+        <h3>Рабочий прототип</h3>
+        <p>Модуль подсчёта работает от начала до конца и проверен на комплекте чертежей реального проекта.</p>
       </li>
       <li class="is-now">
-        <span class="when">Now</span>
-        <h3>Pilot projects</h3>
-        <p>We are looking for a small number of estimating teams to run it on their own drawings and tell us where it falls short.</p>
+        <span class="when">Сейчас</span>
+        <h3>Пилотные проекты</h3>
+        <p>Мы ищем несколько сметных команд, готовых запустить его на своих чертежах и рассказать, где он не дотягивает.</p>
       </li>
       <li>
-        <span class="when">Next</span>
-        <h3>First release</h3>
-        <p>A hosted version shaped by what the pilots teach us. No date is promised yet.</p>
+        <span class="when">Далее</span>
+        <h3>Первый релиз</h3>
+        <p>Облачная версия, сформированная по итогам пилотов. Сроков пока не обещаем.</p>
       </li>
     </ol>
   </div>
@@ -588,27 +588,27 @@
 
 <section class="band" id="faq" aria-labelledby="faq-h">
   <div class="shell">
-    <h2 id="faq-h">Questions estimators ask first.</h2>
+    <h2 id="faq-h">Что сметчики спрашивают в первую очередь.</h2>
     <div class="faq">
       <details>
-        <summary>Does it replace the estimator?</summary>
-        <p>No. It replaces the hours spent measuring. Judgement about scope, exclusions, risk and price stays with the estimator, and so does the approval of every line.</p>
+        <summary>Он заменяет сметчика?</summary>
+        <p>Нет. Он заменяет часы, которые уходят на измерения. Решения об объёме работ, исключениях, рисках и цене остаются за сметчиком, как и утверждение каждой строки.</p>
       </details>
       <details>
-        <summary>How accurate is it?</summary>
-        <p>We do not publish an accuracy figure yet, because a figure from one prototype test would not mean much. Measuring that properly, on real drawing sets, is the purpose of the pilot. Until then every quantity is reviewable against its source.</p>
+        <summary>Насколько он точен?</summary>
+        <p>Мы пока не публикуем показатель точности: цифра по одному тесту прототипа мало что значит. Измерить её как следует, на реальных комплектах чертежей, и есть цель пилота. До тех пор каждое количество можно проверить по источнику.</p>
       </details>
       <details>
-        <summary>What kind of drawings does it need?</summary>
-        <p>PDF drawing sets as issued by the designer. Clean vector PDFs with stated scales work best. Tell us what your sets usually look like and we will say honestly whether it is a good fit today.</p>
+        <summary>Какие чертежи ему нужны?</summary>
+        <p>Комплекты чертежей в PDF в том виде, в каком их выдаёт проектировщик. Лучше всего подходят чистые векторные PDF с указанным масштабом. Расскажите, как обычно выглядят ваши комплекты, и мы честно скажем, подходит ли он вам сегодня.</p>
       </details>
       <details>
-        <summary>What happens to our drawings?</summary>
-        <p>Tender drawings are confidential and we treat them that way. Data handling for a pilot is agreed with you in writing before you send anything.</p>
+        <summary>Что происходит с нашими чертежами?</summary>
+        <p>Тендерные чертежи конфиденциальны, и мы относимся к ним соответственно. Порядок работы с данными в пилоте согласуется с вами письменно до того, как вы что-либо отправите.</p>
       </details>
       <details>
-        <summary>What does it cost?</summary>
-        <p>Pricing is not set yet. Pilot terms are agreed individually.</p>
+        <summary>Сколько это стоит?</summary>
+        <p>Цены пока не установлены. Условия пилота согласуются индивидуально.</p>
       </details>
     </div>
   </div>
@@ -616,20 +616,20 @@
 
 <section class="band" aria-labelledby="about-h">
   <div class="shell about">
-    <h2 id="about-h">Built by someone who has done takeoff by hand.</h2>
+    <h2 id="about-h">Создаётся человеком, который считал объёмы вручную.</h2>
     <div class="body">
-      <p>QtoMate is being built by Begench Begmuratov. He has more than ten years of experience on construction projects with international contractors and now works in planning, cost estimating and quantity takeoff.</p>
-      <p class="quiet">The product is built on Claude, Anthropic's AI model, combined with purpose-built tools for measuring PDF drawings.</p>
+      <p>QtoMate создаёт Бегенч Бегмуратов. У него более десяти лет опыта на строительных проектах с международными подрядчиками, сейчас он занимается планированием, оценкой стоимости и подсчётом объёмов работ.</p>
+      <p class="quiet">Продукт построен на Claude, ИИ-модели компании Anthropic, в сочетании со специальными инструментами для измерения чертежей в PDF.</p>
     </div>
   </div>
 </section>
 
 <div class="blueprint" id="contact">
   <div class="shell closing">
-    <h2>Run it on one of your own drawing sets.</h2>
-    <p>Write a line about what you estimate and what your drawings look like. We reply to every message.</p>
+    <h2>Запустите его на своём комплекте чертежей.</h2>
+    <p>Напишите пару строк о том, что вы считаете и как выглядят ваши чертежи. Мы отвечаем на каждое письмо.</p>
     <div class="actions">
-      <a class="button button-yellow" href="mailto:begench@qtomate.dpdns.org?subject=QtoMate%20early%20access">Request early access</a>
+      <a class="button button-yellow" href="mailto:begench@qtomate.dpdns.org?subject=QtoMate%3A%20%D1%80%D0%B0%D0%BD%D0%BD%D0%B8%D0%B9%20%D0%B4%D0%BE%D1%81%D1%82%D1%83%D0%BF">Запросить ранний доступ</a>
       <a class="mail" href="mailto:begench@qtomate.dpdns.org">begench@qtomate.dpdns.org</a>
     </div>
   </div>
@@ -638,7 +638,7 @@
 <footer class="site">
   <div class="shell">
     <span>© 2026 QtoMate</span>
-    <span>AI quantity takeoff and estimating assistant for construction</span>
+    <span>ИИ-ассистент для подсчёта объёмов и составления смет в строительстве</span>
   </div>
 </footer>
 

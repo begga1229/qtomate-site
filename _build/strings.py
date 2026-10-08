@@ -1,0 +1,403 @@
+# Site copy for all languages.
+# Each entry: key -> (English, Russian, Uzbek, Turkish)
+# Edit a string here, then run:  python3 _build/build.py
+
+LANGS = ["en", "ru", "uz", "tr"]
+LANG_NAMES = {"en": "English", "ru": "Русский", "uz": "O‘zbekcha", "tr": "Türkçe"}
+
+S = {
+    # ---------- head ----------
+    "title": (
+        "QtoMate | AI quantity takeoff for construction",
+        "QtoMate | Подсчёт объёмов работ с помощью ИИ",
+        "QtoMate | Sun’iy intellekt yordamida ish hajmlarini hisoblash",
+        "QtoMate | Yapay zekâ ile inşaat metrajı",
+    ),
+    "meta_desc": (
+        "QtoMate measures PDF construction drawings and drafts the bill of quantities. Every quantity traces back to the drawing, and an estimator approves every line.",
+        "QtoMate измеряет строительные чертежи в PDF и составляет ведомость объёмов работ. Каждое количество привязано к чертежу, и каждую строку утверждает сметчик.",
+        "QtoMate PDF formatidagi qurilish chizmalarini o‘lchaydi va ish hajmlari qaydnomasini tuzadi. Har bir miqdor chizmaga bog‘langan, har bir qatorni smetachi tasdiqlaydi.",
+        "QtoMate PDF inşaat çizimlerini ölçer ve metraj cetvelini hazırlar. Her miktar çizime kadar izlenir, her satırı bir keşif mühendisi onaylar.",
+    ),
+    "og_desc": (
+        "Takeoff that shows its working. Every quantity traces back to the drawing.",
+        "Подсчёт объёмов, в котором видно каждое измерение. Каждое количество привязано к чертежу.",
+        "Har bir raqamning manbasi ko‘rinadigan hajm hisobi. Har bir miqdor chizmaga bog‘langan.",
+        "Her rakamın kaynağını gösteren metraj. Her miktar çizime kadar izlenir.",
+    ),
+
+    # ---------- header ----------
+    "skip": ("Skip to content", "Перейти к содержанию", "Asosiy qismga o‘tish", "İçeriğe geç"),
+    "brand_aria": ("QtoMate home", "QtoMate, главная", "QtoMate, bosh sahifa", "QtoMate ana sayfa"),
+    "nav_aria": ("Main", "Основное меню", "Asosiy menyu", "Ana menü"),
+    "lang_aria": ("Language", "Язык", "Til", "Dil"),
+    "nav_how": ("How it works", "Как это работает", "Qanday ishlaydi", "Nasıl çalışır"),
+    "nav_get": ("What you get", "Что вы получаете", "Nima olasiz", "Ne elde edersiniz"),
+    "nav_status": ("Status", "Статус", "Holat", "Durum"),
+    "nav_faq": ("Questions", "Вопросы", "Savollar", "Sorular"),
+    "cta": ("Request early access", "Запросить ранний доступ", "Erta kirishni so‘rash", "Erken erişim iste"),
+
+    # ---------- hero ----------
+    "h1": (
+        "Takeoff that shows its working.",
+        "Подсчёт объёмов, в котором видно каждое измерение.",
+        "Har bir raqamning manbasi ko‘rinadigan hajm hisobi.",
+        "Her rakamın kaynağını gösteren metraj.",
+    ),
+    "lede": (
+        "QtoMate measures your PDF drawings and drafts the bill of quantities. Select any quantity to see exactly what was measured. Nothing is issued until an estimator approves it.",
+        "QtoMate измеряет ваши чертежи в PDF и составляет черновик ведомости объёмов работ. Выберите любое количество и посмотрите, что именно было измерено. Ничего не выдаётся, пока сметчик не утвердит.",
+        "QtoMate PDF chizmalaringizni o‘lchaydi va ish hajmlari qaydnomasining qoralamasini tuzadi. Istalgan miqdorni tanlang va aynan nima o‘lchanganini ko‘ring. Smetachi tasdiqlamaguncha hech narsa chiqarilmaydi.",
+        "QtoMate PDF çizimlerinizi ölçer ve metraj cetvelinin taslağını hazırlar. Herhangi bir miktarı seçin, tam olarak neyin ölçüldüğünü görün. Keşif mühendisi onaylamadan hiçbir şey yayınlanmaz.",
+    ),
+    "cta_demo": ("Try the sample sheet", "Попробовать на примере", "Namunada sinab ko‘rish", "Örnek paftayı dene"),
+
+    # ---------- demo ----------
+    "plan_aria": (
+        "Sample floor plan, 12 by 8 metres, with three rooms. Selecting a line in the bill of quantities highlights the matching elements on the plan.",
+        "Пример плана этажа 12 на 8 метров с тремя помещениями. При выборе строки ведомости на плане подсвечиваются соответствующие элементы.",
+        "Uch xonali, 12 ga 8 metrli qavat rejasi namunasi. Qaydnomadagi qator tanlanganda rejada tegishli elementlar ajratib ko‘rsatiladi.",
+        "Üç odalı, 12'ye 8 metrelik örnek kat planı. Metraj cetvelinde bir satır seçildiğinde planda ilgili elemanlar vurgulanır.",
+    ),
+    "room_living": ("Living", "Гостиная", "Mehmonxona", "Salon"),
+    "room_bed": ("Bedroom", "Спальня", "Yotoqxona", "Yatak odası"),
+    "room_kitchen": ("Kitchen", "Кухня", "Oshxona", "Mutfak"),
+    "dec": (".", ",", ",", ","),
+    "u_m2": ("m²", "м²", "m²", "m²"),
+    "u_m": ("m", "м", "m", "m"),
+    "u_no": ("no.", "шт.", "dona", "adet"),
+    "boq_title": ("Bill of quantities, draft", "Ведомость объёмов работ, черновик", "Ish hajmlari qaydnomasi, qoralama", "Metraj cetveli, taslak"),
+    "boq_src": (
+        "Source: sheet A-101, ground floor plan, 1:100",
+        "Источник: лист A-101, план первого этажа, 1:100",
+        "Manba: A-101 varaq, birinchi qavat rejasi, 1:100",
+        "Kaynak: A-101 paftası, zemin kat planı, 1:100",
+    ),
+    "r_area": ("Floor area", "Площадь пола", "Pol maydoni", "Döşeme alanı"),
+    "n_area": ("3 rooms, to wall centrelines", "3 помещения, по осям стен", "3 xona, devor o‘qlari bo‘yicha", "3 oda, duvar akslarına göre"),
+    "r_ext": ("External walls", "Наружные стены", "Tashqi devorlar", "Dış duvarlar"),
+    "n_ext": ("Perimeter, grid A–C / 1–3", "Периметр, оси A–C / 1–3", "Perimetr, A–C / 1–3 o‘qlari", "Çevre, A–C / 1–3 aksları"),
+    "r_int": ("Internal partitions", "Внутренние перегородки", "Ichki pardevorlar", "İç bölme duvarlar"),
+    "n_int": ("2 runs", "2 участка", "2 uchastka", "2 hat"),
+    "r_doors": ("Doors", "Двери", "Eshiklar", "Kapılar"),
+    "n_doors": ("1 external, 2 internal", "1 наружная, 2 внутренние", "1 tashqi, 2 ichki", "1 dış, 2 iç"),
+    "r_win": ("Windows", "Окна", "Derazalar", "Pencereler"),
+    "n_win": ("Counted on grid 1 and C", "Подсчитаны по осям 1 и C", "1 va C o‘qlari bo‘yicha sanalgan", "1 ve C akslarında sayıldı"),
+    "t_progress": (
+        "{done} of {total} lines approved",
+        "Утверждено строк: {done} из {total}",
+        "{total} qatordan {done} tasi tasdiqlandi",
+        "{total} satırdan {done} tanesi onaylandı",
+    ),
+    "t_all": ("All {total} lines approved", "Все {total} строк утверждены", "Barcha {total} qator tasdiqlandi", "{total} satırın tümü onaylandı"),
+    "approve": ("Approve line", "Утвердить строку", "Qatorni tasdiqlash", "Satırı onayla"),
+    "approved": ("Approved", "Утверждено", "Tasdiqlandi", "Onaylandı"),
+    "demo_caption": (
+        "Illustrative sample, not a real project. Select a line to see what was measured, then approve it the way an estimator would.",
+        "Условный пример, не реальный проект. Выберите строку, чтобы увидеть, что было измерено, и утвердите её, как это сделал бы сметчик.",
+        "Shartli namuna, haqiqiy loyiha emas. Nima o‘lchanganini ko‘rish uchun qatorni tanlang, so‘ng uni smetachi kabi tasdiqlang.",
+        "Temsili örnektir, gerçek bir proje değildir. Neyin ölçüldüğünü görmek için bir satır seçin, sonra bir keşif mühendisi gibi onaylayın.",
+    ),
+
+    # ---------- why ----------
+    "why_h": (
+        "Measuring is the slowest part of pricing a job.",
+        "Измерения отнимают больше всего времени при расчёте стоимости.",
+        "Narx hisoblashda eng ko‘p vaqtni o‘lchash oladi.",
+        "Bir işi fiyatlandırmanın en yavaş kısmı ölçmektir.",
+    ),
+    "why_intro": (
+        "Every tender starts with someone tracing drawings and typing numbers into a spreadsheet. It takes days, and a single missed wall can decide whether the job makes money.",
+        "Каждый тендер начинается с того, что кто-то обводит чертежи и вбивает цифры в таблицу. На это уходят дни, а одна пропущенная стена может решить, будет ли объект прибыльным.",
+        "Har bir tender kimdir chizmalarni birma-bir o‘lchab, raqamlarni jadvalga kiritishidan boshlanadi. Bunga kunlar ketadi, e’tibordan chetda qolgan bitta devor esa ish foyda keltirish-keltirmasligini hal qilishi mumkin.",
+        "Her ihale, birinin çizimlerin üzerinden geçip rakamları tabloya yazmasıyla başlar. Günler sürer ve gözden kaçan tek bir duvar işin kâr edip etmeyeceğini belirleyebilir.",
+    ),
+    "th_hand": ("By hand", "Вручную", "Qo‘lda", "Elle"),
+    "th_ours": ("With QtoMate", "С QtoMate", "QtoMate bilan", "QtoMate ile"),
+    "c1_h": ("Measuring", "Измерение", "O‘lchash", "Ölçüm"),
+    "c1_a": (
+        "The estimator traces every sheet, element by element.",
+        "Сметчик обводит каждый лист, элемент за элементом.",
+        "Smetachi har bir varaqni element-ma-element o‘lchab chiqadi.",
+        "Keşif mühendisi her paftayı eleman eleman ölçer.",
+    ),
+    "c1_b": (
+        "QtoMate reads scales and dimensions and measures the sheets for you.",
+        "QtoMate считывает масштабы и размеры и измеряет листы за вас.",
+        "QtoMate masshtab va o‘lchamlarni o‘qiydi hamda varaqlarni siz uchun o‘lchaydi.",
+        "QtoMate ölçekleri ve ölçüleri okur, paftaları sizin yerinize ölçer.",
+    ),
+    "c2_h": ("Checking", "Проверка", "Tekshirish", "Kontrol"),
+    "c2_a": (
+        "A second person re-measures, or nobody does.",
+        "Второй человек перемеряет заново, либо никто.",
+        "Ikkinchi odam qaytadan o‘lchaydi yoki hech kim tekshirmaydi.",
+        "İkinci bir kişi baştan ölçer ya da kimse ölçmez.",
+    ),
+    "c2_b": (
+        "Each quantity is tied to the place it came from, so a check takes one look.",
+        "Каждое количество привязано к месту на чертеже, поэтому проверка занимает один взгляд.",
+        "Har bir miqdor chizmadagi joyiga bog‘langan, shuning uchun tekshirishga bir qarash kifoya.",
+        "Her miktar geldiği yere bağlıdır, bu yüzden kontrol için tek bakış yeter.",
+    ),
+    "c3_h": ("Revisions", "Изменения", "O‘zgarishlar", "Revizyonlar"),
+    "c3_a": (
+        "A new drawing revision means starting large parts again.",
+        "Новая редакция чертежей означает, что большую часть работы надо начинать заново.",
+        "Chizmaning yangi tahriri ishning katta qismini qaytadan boshlashni anglatadi.",
+        "Yeni bir çizim revizyonu, işin büyük kısmına baştan başlamak demektir.",
+    ),
+    "c3_b": (
+        "Re-run the changed sheets and review only the lines that moved.",
+        "Запустите изменённые листы повторно и проверьте только те строки, которые изменились.",
+        "O‘zgargan varaqlarni qayta ishga tushiring va faqat o‘zgargan qatorlarni ko‘rib chiqing.",
+        "Değişen paftaları yeniden çalıştırın ve yalnızca değişen satırları inceleyin.",
+    ),
+    "c4_h": ("Responsibility", "Ответственность", "Mas’uliyat", "Sorumluluk"),
+    "c4_a": ("With the estimator.", "На сметчике.", "Smetachida.", "Keşif mühendisinde."),
+    "c4_b": (
+        "Still with the estimator. Nothing leaves without approval.",
+        "По-прежнему на сметчике. Без утверждения ничего не уходит.",
+        "Avvalgidek smetachida. Tasdiqsiz hech narsa chiqmaydi.",
+        "Yine keşif mühendisinde. Onay olmadan hiçbir şey çıkmaz.",
+    ),
+
+    # ---------- how ----------
+    "how_h": (
+        "From drawing set to bill of quantities in four steps.",
+        "От комплекта чертежей до ведомости объёмов за четыре шага.",
+        "Chizmalar to‘plamidan ish hajmlari qaydnomasigacha to‘rt qadam.",
+        "Çizim paketinden metraj cetveline dört adımda.",
+    ),
+    "step_word": ("Step", "Шаг", "Qadam", "Adım"),
+    "s1_h": ("Upload the drawing set", "Загрузите комплект чертежей", "Chizmalar to‘plamini yuklang", "Çizim paketini yükleyin"),
+    "s1_p": (
+        "Add the PDF sheets for the package you are pricing: plans, sections and schedules.",
+        "Добавьте листы PDF по оцениваемому разделу: планы, разрезы и спецификации.",
+        "Baholanayotgan bo‘lim bo‘yicha PDF varaqlarni qo‘shing: rejalar, qirqimlar va spetsifikatsiyalar.",
+        "Fiyatlandırdığınız paketin PDF paftalarını ekleyin: planlar, kesitler ve listeler.",
+    ),
+    "s2_h": ("Sheets are read and scaled", "Листы распознаются, масштаб определяется", "Varaqlar o‘qiladi va masshtab aniqlanadi", "Paftalar okunur ve ölçeklenir"),
+    "s2_p": (
+        "QtoMate identifies each sheet, its scale and its dimensions before measuring anything.",
+        "Прежде чем что-либо измерять, QtoMate определяет каждый лист, его масштаб и размеры.",
+        "QtoMate biror narsani o‘lchashdan oldin har bir varaqni, uning masshtabi va o‘lchamlarini aniqlaydi.",
+        "QtoMate herhangi bir şeyi ölçmeden önce her paftayı, ölçeğini ve ölçülerini belirler.",
+    ),
+    "s3_h": ("Elements are measured", "Элементы измеряются", "Elementlar o‘lchanadi", "Elemanlar ölçülür"),
+    "s3_p": (
+        "Lengths, areas and counts are taken off and grouped into draft quantity lines.",
+        "Длины, площади и количества снимаются с чертежа и группируются в черновые строки ведомости.",
+        "Uzunliklar, maydonlar va sonlar chizmadan olinadi hamda qaydnomaning qoralama qatorlariga guruhlanadi.",
+        "Uzunluklar, alanlar ve adetler çıkarılır, taslak metraj satırları halinde gruplanır.",
+    ),
+    "s4_h": ("An estimator approves", "Сметчик утверждает", "Smetachi tasdiqlaydi", "Keşif mühendisi onaylar"),
+    "s4_p": (
+        "You check each line against its source, correct what needs correcting, and export.",
+        "Вы сверяете каждую строку с источником, исправляете то, что нужно, и экспортируете.",
+        "Har bir qatorni manbasi bilan solishtirasiz, kerakli joylarni tuzatasiz va eksport qilasiz.",
+        "Her satırı kaynağıyla karşılaştırır, gerekeni düzeltir ve dışa aktarırsınız.",
+    ),
+
+    # ---------- line ----------
+    "line_h": ("Every line carries its own evidence.", "Каждая строка несёт своё обоснование.", "Har bir qator o‘z asosiga ega.", "Her satır kendi kanıtını taşır."),
+    "line_intro": (
+        "A quantity on its own is just a number. QtoMate keeps what a reviewer needs next to it.",
+        "Количество само по себе просто цифра. QtoMate хранит рядом с ним всё, что нужно проверяющему.",
+        "Miqdorning o‘zi shunchaki raqam. QtoMate tekshiruvchiga kerakli hamma narsani uning yonida saqlaydi.",
+        "Miktar tek başına yalnızca bir rakamdır. QtoMate, kontrol edenin ihtiyaç duyduğu her şeyi onun yanında tutar.",
+    ),
+    "rec_aria": ("Example quantity record", "Пример записи о количестве", "Miqdor yozuvi namunasi", "Örnek miktar kaydı"),
+    "rec_title": ("Line 3, internal partitions", "Строка 3, внутренние перегородки", "3-qator, ichki pardevorlar", "Satır 3, iç bölme duvarlar"),
+    "rec_tag": ("Sample record", "Пример записи", "Namuna yozuv", "Örnek kayıt"),
+    "rec_qty": ("Quantity", "Количество", "Miqdor", "Miktar"),
+    "rec_as": ("Measured as", "Способ измерения", "O‘lchash usuli", "Ölçüm şekli"),
+    "rec_as_v": (
+        "Centreline length, 2 runs: 8.0 m and 5.0 m",
+        "Длина по оси, 2 участка: 8,0 м и 5,0 м",
+        "O‘q bo‘yicha uzunlik, 2 uchastka: 8,0 m va 5,0 m",
+        "Aks uzunluğu, 2 hat: 8,0 m ve 5,0 m",
+    ),
+    "rec_src": ("Source", "Источник", "Manba", "Kaynak"),
+    "rec_src_v": (
+        "Sheet A-101, ground floor plan, grid B/1–3 and B–C/2",
+        "Лист A-101, план первого этажа, оси B/1–3 и B–C/2",
+        "A-101 varaq, birinchi qavat rejasi, B/1–3 va B–C/2 o‘qlari",
+        "A-101 paftası, zemin kat planı, B/1–3 ve B–C/2 aksları",
+    ),
+    "rec_scale": ("Scale used", "Масштаб", "Masshtab", "Kullanılan ölçek"),
+    "rec_scale_v": (
+        "1:100, confirmed against a written dimension",
+        "1:100, сверен с проставленным размером",
+        "1:100, yozilgan o‘lcham bilan solishtirib tasdiqlangan",
+        "1:100, yazılı bir ölçüyle doğrulandı",
+    ),
+    "rec_rate": ("Rate", "Расценка", "Narx", "Birim fiyat"),
+    "rec_rate_v": ("From your rate library", "Из вашей базы расценок", "Sizning narxlar bazangizdan", "Sizin birim fiyat kütüphanenizden"),
+    "rec_status": ("Status", "Статус", "Holat", "Durum"),
+    "rec_status_v": ("Needs estimator review", "Требуется проверка сметчика", "Smetachi tekshiruvi kerak", "Keşif mühendisi incelemesi gerekli"),
+    "p1_h": ("Where it came from", "Откуда взято", "Qayerdan olingan", "Nereden geldi"),
+    "p1_p": (
+        "Each quantity points to its sheet and location, so nobody has to hunt through the set to verify it.",
+        "Каждое количество указывает на свой лист и место на нём, поэтому для проверки не нужно перерывать весь комплект.",
+        "Har bir miqdor o‘z varag‘i va joyini ko‘rsatadi, shuning uchun tekshirish uchun butun to‘plamni titkilash shart emas.",
+        "Her miktar kendi paftasını ve konumunu gösterir; doğrulamak için kimsenin bütün paketi taraması gerekmez.",
+    ),
+    "p2_h": ("How it was measured", "Как измерено", "Qanday o‘lchangan", "Nasıl ölçüldü"),
+    "p2_p": (
+        "The method and the scale are recorded with the number, which is what makes a check quick.",
+        "Вместе с цифрой записываются способ и масштаб, поэтому проверка проходит быстро.",
+        "Usul va masshtab raqam bilan birga yozib qo‘yiladi, shu sababli tekshirish tez bo‘ladi.",
+        "Yöntem ve ölçek rakamla birlikte kaydedilir; kontrolü hızlandıran da budur.",
+    ),
+    "p3_h": ("Your rates, not ours", "Ваши расценки, не наши", "Sizning narxlaringiz, bizniki emas", "Sizin fiyatlarınız, bizim değil"),
+    "p3_p": (
+        "QtoMate produces quantities and prices them only from rates you supply. It does not invent prices.",
+        "QtoMate считает объёмы и оценивает их только по расценкам, которые даёте вы. Цены он не придумывает.",
+        "QtoMate hajmlarni hisoblaydi va ularni faqat siz bergan narxlar bo‘yicha baholaydi. Narxlarni o‘zidan to‘qimaydi.",
+        "QtoMate miktarları üretir ve yalnızca sizin verdiğiniz birim fiyatlarla fiyatlandırır. Fiyat uydurmaz.",
+    ),
+    "p4_h": ("A person signs off", "Подпись ставит человек", "Yakuniy tasdiq insonda", "Son onay insanda"),
+    "p4_p": (
+        "Draft lines stay drafts until an estimator approves them. That step cannot be skipped.",
+        "Черновые строки остаются черновиками, пока их не утвердит сметчик. Этот шаг нельзя пропустить.",
+        "Qoralama qatorlar smetachi tasdiqlamaguncha qoralama bo‘lib qoladi. Bu qadamni o‘tkazib yuborib bo‘lmaydi.",
+        "Taslak satırlar, bir keşif mühendisi onaylayana kadar taslak kalır. Bu adım atlanamaz.",
+    ),
+
+    # ---------- scope ----------
+    "scope_h": ("What it works with today.", "С чем он работает сегодня.", "Bugun nimalar bilan ishlaydi.", "Bugün nelerle çalışıyor."),
+    "sc_in": ("Goes in", "На входе", "Kirish", "Giren"),
+    "sc_in1": ("PDF drawing sets", "Комплекты чертежей в PDF", "PDF chizmalar to‘plami", "PDF çizim paketleri"),
+    "sc_in1s": ("Plans, sections, schedules", "Планы, разрезы, спецификации", "Rejalar, qirqimlar, spetsifikatsiyalar", "Planlar, kesitler, listeler"),
+    "sc_in2": ("Your rate library", "Ваша база расценок", "Sizning narxlar bazangiz", "Birim fiyat kütüphaneniz"),
+    "sc_in2s": ("Optional, for a priced draft", "По желанию, для черновика с ценами", "Ixtiyoriy, narxli qoralama uchun", "İsteğe bağlı, fiyatlı taslak için"),
+    "sc_conv": ("Measurement conventions", "Правила подсчёта", "O‘lchash qoidalari", "Ölçüm kuralları"),
+    "sc_c1s": ("Metric", "Метрическая система", "Metrik tizim", "Metrik"),
+    "sc_c2": ("US imperial takeoff", "Подсчёт в американской системе мер", "AQSh o‘lchov tizimida hisob", "ABD emperyal metrajı"),
+    "sc_c2s": ("Feet and inches", "Футы и дюймы", "Fut va dyuym", "Fit ve inç"),
+    "sc_c3": ("Regional norm bases", "Региональные нормативные базы", "Mintaqaviy me’yoriy bazalar", "Bölgesel norm tabanları"),
+    "sc_c3s": ("Planned next", "В планах", "Rejada", "Sırada"),
+    "sc_out": ("Comes out", "На выходе", "Chiqish", "Çıkan"),
+    "sc_o1": ("Bill of quantities", "Ведомость объёмов работ", "Ish hajmlari qaydnomasi", "Metraj cetveli"),
+    "sc_o1s": ("With source references per line", "Со ссылкой на источник в каждой строке", "Har bir qatorda manbaga havola bilan", "Her satırda kaynak referansıyla"),
+    "sc_o2": ("Excel export", "Экспорт в Excel", "Excel’ga eksport", "Excel'e aktarım"),
+    "sc_o2s": ("For your own estimating workbook", "Для вашей собственной сметной книги", "O‘z smeta faylingiz uchun", "Kendi keşif dosyanız için"),
+
+    # ---------- status ----------
+    "status_h": ("Where the product is right now.", "На каком этапе продукт сейчас.", "Mahsulot hozir qaysi bosqichda.", "Ürün şu anda hangi aşamada."),
+    "status_intro": (
+        "QtoMate is early. We would rather tell you that plainly than show you a logo wall.",
+        "QtoMate на раннем этапе. Мы предпочитаем сказать об этом прямо, а не показывать стену логотипов.",
+        "QtoMate hali dastlabki bosqichda. Buni logotiplar qatori bilan yashirgandan ko‘ra ochiq aytgan ma’qul.",
+        "QtoMate henüz erken aşamada. Bunu bir logo duvarı göstermek yerine açıkça söylemeyi tercih ediyoruz.",
+    ),
+    "st1_when": ("Done", "Готово", "Bajarildi", "Tamamlandı"),
+    "st1_h": ("Working prototype", "Рабочий прототип", "Ishlaydigan prototip", "Çalışan prototip"),
+    "st1_p": (
+        "The takeoff engine runs end to end and has been tested on a real project drawing set.",
+        "Модуль подсчёта работает от начала до конца и проверен на комплекте чертежей реального проекта.",
+        "Hisoblash moduli boshidan oxirigacha ishlaydi va haqiqiy loyiha chizmalarida sinovdan o‘tgan.",
+        "Metraj motoru baştan sona çalışıyor ve gerçek bir projenin çizim paketi üzerinde test edildi.",
+    ),
+    "st2_when": ("Now", "Сейчас", "Hozir", "Şimdi"),
+    "st2_h": ("Pilot projects", "Пилотные проекты", "Pilot loyihalar", "Pilot projeler"),
+    "st2_p": (
+        "We are looking for a small number of estimating teams to run it on their own drawings and tell us where it falls short.",
+        "Мы ищем несколько сметных команд, готовых запустить его на своих чертежах и рассказать, где он не дотягивает.",
+        "Uni o‘z chizmalarida sinab, qayerda kamchiligi borligini aytadigan bir nechta smeta jamoasini qidiryapmiz.",
+        "Aracı kendi çizimlerinde çalıştırıp nerede yetersiz kaldığını bize söyleyecek az sayıda keşif ekibi arıyoruz.",
+    ),
+    "st3_when": ("Next", "Далее", "Keyin", "Sırada"),
+    "st3_h": ("First release", "Первый релиз", "Birinchi reliz", "İlk sürüm"),
+    "st3_p": (
+        "A hosted version shaped by what the pilots teach us. No date is promised yet.",
+        "Облачная версия, сформированная по итогам пилотов. Сроков пока не обещаем.",
+        "Pilotlar natijalari asosida shakllanadigan onlayn versiya. Hozircha sana va’da qilinmaydi.",
+        "Pilotlardan öğrendiklerimizle şekillenecek, çevrimiçi bir sürüm. Henüz tarih sözü vermiyoruz.",
+    ),
+
+    # ---------- faq ----------
+    "faq_h": (
+        "Questions estimators ask first.",
+        "Что сметчики спрашивают в первую очередь.",
+        "Smetachilar birinchi bo‘lib so‘raydigan savollar.",
+        "Keşif mühendislerinin ilk sorduğu sorular.",
+    ),
+    "q1": ("Does it replace the estimator?", "Он заменяет сметчика?", "U smetachining o‘rnini bosadimi?", "Keşif mühendisinin yerini alır mı?"),
+    "a1": (
+        "No. It replaces the hours spent measuring. Judgement about scope, exclusions, risk and price stays with the estimator, and so does the approval of every line.",
+        "Нет. Он заменяет часы, которые уходят на измерения. Решения об объёме работ, исключениях, рисках и цене остаются за сметчиком, как и утверждение каждой строки.",
+        "Yo‘q. U o‘lchashga ketadigan soatlarning o‘rnini bosadi. Ishlar tarkibi, istisnolar, xatarlar va narx bo‘yicha qarorlar, shuningdek har bir qatorni tasdiqlash smetachida qoladi.",
+        "Hayır. Ölçmeye harcanan saatlerin yerini alır. Kapsam, hariç tutulanlar, risk ve fiyat konusundaki kararlar da her satırın onayı da keşif mühendisinde kalır.",
+    ),
+    "q2": ("How accurate is it?", "Насколько он точен?", "U qanchalik aniq?", "Ne kadar doğru?"),
+    "a2": (
+        "We do not publish an accuracy figure yet, because a figure from one prototype test would not mean much. Measuring that properly, on real drawing sets, is the purpose of the pilot. Until then every quantity is reviewable against its source.",
+        "Мы пока не публикуем показатель точности: цифра по одному тесту прототипа мало что значит. Измерить её как следует, на реальных комплектах чертежей, и есть цель пилота. До тех пор каждое количество можно проверить по источнику.",
+        "Hozircha aniqlik ko‘rsatkichini e’lon qilmaymiz, chunki prototipning bitta sinovidan olingan raqam ko‘p narsani anglatmaydi. Uni haqiqiy chizmalar to‘plamlarida to‘g‘ri o‘lchash pilotning maqsadidir. Ungacha har bir miqdorni manbasi bo‘yicha tekshirish mumkin.",
+        "Henüz bir doğruluk oranı yayımlamıyoruz, çünkü tek bir prototip testinden çıkan rakam pek bir şey ifade etmez. Bunu gerçek çizim paketlerinde doğru dürüst ölçmek pilotun amacıdır. O zamana kadar her miktar kaynağına göre kontrol edilebilir.",
+    ),
+    "q3": ("What kind of drawings does it need?", "Какие чертежи ему нужны?", "Unga qanday chizmalar kerak?", "Ne tür çizimlere ihtiyaç duyar?"),
+    "a3": (
+        "PDF drawing sets as issued by the designer. Clean vector PDFs with stated scales work best. Tell us what your sets usually look like and we will say honestly whether it is a good fit today.",
+        "Комплекты чертежей в PDF в том виде, в каком их выдаёт проектировщик. Лучше всего подходят чистые векторные PDF с указанным масштабом. Расскажите, как обычно выглядят ваши комплекты, и мы честно скажем, подходит ли он вам сегодня.",
+        "Loyihachi bergan ko‘rinishdagi PDF chizmalar to‘plami. Masshtabi ko‘rsatilgan toza vektorli PDF’lar eng yaxshi natija beradi. To‘plamlaringiz odatda qanday ko‘rinishda bo‘lishini ayting, bugun sizga mos keladimi yoki yo‘qmi, ochiq aytamiz.",
+        "Tasarımcının yayımladığı haliyle PDF çizim paketleri. Ölçeği belirtilmiş, temiz vektör PDF'ler en iyi sonucu verir. Paketlerinizin genelde nasıl olduğunu anlatın, bugün size uygun olup olmadığını dürüstçe söyleyelim.",
+    ),
+    "q4": ("What happens to our drawings?", "Что происходит с нашими чертежами?", "Chizmalarimiz bilan nima bo‘ladi?", "Çizimlerimize ne olur?"),
+    "a4": (
+        "Tender drawings are confidential and we treat them that way. Data handling for a pilot is agreed with you in writing before you send anything.",
+        "Тендерные чертежи конфиденциальны, и мы относимся к ним соответственно. Порядок работы с данными в пилоте согласуется с вами письменно до того, как вы что-либо отправите.",
+        "Tender chizmalari maxfiy va biz ularga shunday munosabatda bo‘lamiz. Pilotda ma’lumotlar bilan ishlash tartibi siz biror narsa yuborishingizdan oldin yozma ravishda kelishiladi.",
+        "İhale çizimleri gizlidir ve biz de öyle davranırız. Pilotta verilerin nasıl işleneceği, siz herhangi bir şey göndermeden önce sizinle yazılı olarak kararlaştırılır.",
+    ),
+    "q5": ("What does it cost?", "Сколько это стоит?", "Narxi qancha?", "Ücreti ne kadar?"),
+    "a5": (
+        "Pricing is not set yet. Pilot terms are agreed individually.",
+        "Цены пока не установлены. Условия пилота согласуются индивидуально.",
+        "Narxlar hali belgilanmagan. Pilot shartlari alohida kelishiladi.",
+        "Fiyatlandırma henüz belirlenmedi. Pilot koşulları ayrı ayrı kararlaştırılır.",
+    ),
+
+    # ---------- about ----------
+    "about_h": (
+        "Built by someone who has done takeoff by hand.",
+        "Создаётся человеком, который считал объёмы вручную.",
+        "Hajmlarni qo‘lda hisoblagan odam tomonidan yaratilmoqda.",
+        "Metrajı elle yapmış biri tarafından geliştiriliyor.",
+    ),
+    "about_p1": (
+        "QtoMate is being built by Begench Begmuratov. He has more than ten years of experience on construction projects with international contractors and now works in planning, cost estimating and quantity takeoff.",
+        "QtoMate создаёт Бегенч Бегмуратов. У него более десяти лет опыта на строительных проектах с международными подрядчиками, сейчас он занимается планированием, оценкой стоимости и подсчётом объёмов работ.",
+        "QtoMate’ni Begench Begmuratov yaratmoqda. U xalqaro pudratchilar bilan qurilish loyihalarida o‘n yildan ortiq tajribaga ega, hozir rejalashtirish, qiymatni baholash va ish hajmlarini hisoblash bilan shug‘ullanadi.",
+        "QtoMate'i Begench Begmuratov geliştiriyor. Uluslararası yüklenicilerle inşaat projelerinde on yılı aşkın deneyimi var; şu anda planlama, maliyet tahmini ve metraj alanlarında çalışıyor.",
+    ),
+    "about_p2": (
+        "The product is built on Claude, Anthropic's AI model, combined with purpose-built tools for measuring PDF drawings.",
+        "Продукт построен на Claude, ИИ-модели компании Anthropic, в сочетании со специальными инструментами для измерения чертежей в PDF.",
+        "Mahsulot Anthropic kompaniyasining Claude sun’iy intellekt modeli hamda PDF chizmalarni o‘lchash uchun maxsus yaratilgan vositalar asosida qurilgan.",
+        "Ürün, Anthropic'in yapay zekâ modeli Claude ile PDF çizimleri ölçmek için özel geliştirilmiş araçların birleşimi üzerine kurulu.",
+    ),
+
+    # ---------- closing ----------
+    "close_h": (
+        "Run it on one of your own drawing sets.",
+        "Запустите его на своём комплекте чертежей.",
+        "Uni o‘z chizmalaringizda sinab ko‘ring.",
+        "Kendi çizim paketinizde deneyin.",
+    ),
+    "close_p": (
+        "Write a line about what you estimate and what your drawings look like. We reply to every message.",
+        "Напишите пару строк о том, что вы считаете и как выглядят ваши чертежи. Мы отвечаем на каждое письмо.",
+        "Nimani hisoblashingiz va chizmalaringiz qanday ko‘rinishda ekani haqida ikki og‘iz yozing. Har bir xatga javob beramiz.",
+        "Neyin metrajını yaptığınızı ve çizimlerinizin nasıl olduğunu birkaç satırla yazın. Her mesaja yanıt veriyoruz.",
+    ),
+    "mail_subject": ("QtoMate early access", "QtoMate: ранний доступ", "QtoMate: erta kirish", "QtoMate erken erişim"),
+    "foot_tag": (
+        "AI quantity takeoff and estimating assistant for construction",
+        "ИИ-ассистент для подсчёта объёмов и составления смет в строительстве",
+        "Qurilishda ish hajmlarini hisoblash va smeta tuzish uchun sun’iy intellekt yordamchisi",
+        "İnşaat için yapay zekâ destekli metraj ve keşif asistanı",
+    ),
+}
