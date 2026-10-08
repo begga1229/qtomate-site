@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>QtoMate | Takeoff workspace</title>
+<meta name="description" content="Open a PDF drawing in your browser, set the scale, measure lengths, areas and counts, approve each line and export the bill of quantities.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23080d1a'/%3E%3Crect x='7' y='7' width='18' height='18' rx='3' fill='none' stroke='%233de3ff' stroke-width='2.4'/%3E%3Crect x='16' y='16' width='9' height='9' rx='1.5' fill='%23b6ff5c'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+
+<header class="top">
+  <a class="brand" id="home-link" href="../" data-i18n-title="home">
+    <svg viewBox="0 0 32 32" aria-hidden="true"><rect x="5" y="5" width="22" height="22" rx="4" fill="none" stroke="currentColor" stroke-width="2.4"/><rect x="16" y="16" width="11" height="11" rx="2" class="brand-dot"/></svg>
+    QtoMate
+  </a>
+  <div class="file" id="file-name"></div>
+  <div class="top-actions">
+    <label class="seg" data-i18n-title="units">
+      <select id="unit-system" data-i18n-aria="units">
+        <option value="metric" data-i18n="metric"></option>
+        <option value="imperial" data-i18n="imperial"></option>
+      </select>
+    </label>
+    <label class="seg" data-i18n-title="language">
+      <select id="lang" data-i18n-aria="language"></select>
+    </label>
+    <button class="btn ghost" id="open-other" type="button" hidden data-i18n="open_other"></button>
+    <button class="btn ghost icon" id="settings-btn" type="button" data-i18n-title="settings" data-i18n-aria="settings">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.6 2.7 3.1-.5.9 3 2.9 1.2-1.2 2.9 1.2 2.9-2.9 1.2-.9 3-3.1-.5L12 21l-1.6-2.7-3.1.5-.9-3-2.9-1.2 1.2-2.9-1.2-2.9 2.9-1.2.9-3 3.1.5z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>
+    </button>
+  </div>
+</header>
+
+<main class="work" id="work">
+
+  <!-- empty state -->
+  <section class="empty" id="empty">
+    <div class="drop" id="drop">
+      <h1 data-i18n="empty_h"></h1>
+      <p data-i18n="empty_p"></p>
+      <div class="empty-actions">
+        <button class="btn primary" id="pick" type="button" data-i18n="open_pdf"></button>
+        <button class="btn ghost" id="sample" type="button" data-i18n="use_sample"></button>
+      </div>
+      <p class="fine" data-i18n="privacy_ai"></p>
+    </div>
+    <input type="file" id="file" accept="application/pdf,.pdf" hidden>
+  </section>
+
+  <!-- workspace -->
+  <section class="stage" id="stage" hidden>
+    <div class="tools" role="toolbar" aria-orientation="vertical">
+      <button class="tool" type="button" data-tool="select" aria-pressed="true" data-i18n-title="tool_select" data-i18n-aria="tool_select">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3l12 9-6 1.4L9.5 20z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
+      </button>
+      <button class="tool" type="button" data-tool="length" aria-pressed="false">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 18L20 6M4 18l1.5-4M4 18l4-.5M20 6l-1.5 4M20 6l-4 .5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span data-i18n="tool_length"></span>
+      </button>
+      <button class="tool" type="button" data-tool="area" aria-pressed="false">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6l11-2 5 8-6 8-9-3z" fill="currentColor" fill-opacity=".18" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
+        <span data-i18n="tool_area"></span>
+      </button>
+      <button class="tool" type="button" data-tool="count" aria-pressed="false">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="7" cy="8" r="2.6" fill="currentColor"/><circle cx="17" cy="7" r="2.6" fill="currentColor"/><circle cx="12" cy="17" r="2.6" fill="currentColor"/></svg>
+        <span data-i18n="tool_count"></span>
+      </button>
+      <span class="tools-sep" aria-hidden="true"></span>
+      <button class="tool" type="button" id="scale-btn" aria-expanded="false" aria-controls="scale-pop">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 15h18v5H3zM7 15v2.5M11 15v3.5M15 15v2.5M19 15v3.5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M3 9h18M3 7v4M21 7v4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+        <span data-i18n="tool_scale"></span>
+      </button>
+      <button class="tool ai" type="button" id="ai-btn">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8zM19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z" fill="currentColor"/></svg>
+        <span data-i18n="tool_ai"></span>
+      </button>
+    </div>
+
+    <div class="scale-pop" id="scale-pop" hidden>
+      <h2 data-i18n="scale_h"></h2>
+      <p data-i18n="scale_p"></p>
+      <div class="presets" id="presets"></div>
+      <div class="row-inline">
+        <label for="scale-custom" data-i18n="scale_custom"></label>
+        <input id="scale-custom" type="number" min="1" step="1" inputmode="numeric">
+        <button class="btn small" id="scale-custom-apply" type="button" data-i18n="scale_apply"></button>
+      </div>
+      <label class="check"><input type="checkbox" id="scale-all" checked> <span data-i18n="scale_all"></span></label>
+      <button class="btn ghost small" id="calibrate-btn" type="button" data-i18n="scale_calibrate"></button>
+    </div>
+
+    <div class="viewer">
+      <div class="viewbar">
+        <div class="pager">
+          <button class="btn ghost icon" id="prev" type="button" data-i18n-title="prev_page" data-i18n-aria="prev_page"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 6L8.5 12l6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          <span id="page-label"></span>
+          <button class="btn ghost icon" id="next" type="button" data-i18n-title="next_page" data-i18n-aria="next_page"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9.5 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        </div>
+        <div class="scale-chip" id="scale-chip"></div>
+        <div class="zoomer">
+          <button class="btn ghost icon" id="zoom-out" type="button" data-i18n-title="zoom_out" data-i18n-aria="zoom_out"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 12h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+          <span id="zoom-label">100%</span>
+          <button class="btn ghost icon" id="zoom-in" type="button" data-i18n-title="zoom_in" data-i18n-aria="zoom_in"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 12h12M12 6v12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+          <button class="btn ghost small" id="zoom-fit" type="button" data-i18n="zoom_fit"></button>
+        </div>
+      </div>
+      <div class="scroller" id="scroller" tabindex="0">
+        <div class="sheet" id="sheet">
+          <canvas id="canvas"></canvas>
+          <svg id="overlay" xmlns="http://www.w3.org/2000/svg"></svg>
+        </div>
+      </div>
+      <div class="hint" id="hint">
+        <span id="hint-text"></span>
+        <span class="hint-form" id="calib-form" hidden>
+          <label for="calib-value" data-i18n="scale_real"></label>
+          <input id="calib-value" type="number" min="0" step="any" inputmode="decimal">
+          <span id="calib-unit"></span>
+          <button class="btn small primary" id="calib-apply" type="button" data-i18n="scale_apply"></button>
+        </span>
+        <span class="hint-actions" id="hint-actions" hidden>
+          <button class="btn small ghost" id="undo-point" type="button" data-i18n="undo_point"></button>
+          <button class="btn small ghost" id="cancel-draft" type="button" data-i18n="cancel"></button>
+          <button class="btn small primary" id="finish-draft" type="button" data-i18n="finish"></button>
+        </span>
+      </div>
+    </div>
+
+    <aside class="boq" aria-labelledby="boq-h">
+      <div class="boq-head">
+        <h2 id="boq-h" data-i18n="boq_h"></h2>
+        <span id="progress"></span>
+      </div>
+      <p class="boq-empty" id="boq-empty" data-i18n="boq_empty"></p>
+      <ol class="rows" id="rows"></ol>
+      <div class="boq-foot">
+        <button class="btn primary" id="export-xlsx" type="button" data-i18n="export_xlsx"></button>
+        <button class="btn ghost" id="export-csv" type="button" data-i18n="export_csv"></button>
+      </div>
+    </aside>
+  </section>
+</main>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<dialog id="settings" aria-labelledby="ai-h">
+  <form method="dialog" class="dlg">
+    <h2 id="ai-h" data-i18n="ai_h"></h2>
+    <p data-i18n="ai_p"></p>
+    <label for="ai-key" data-i18n="ai_key"></label>
+    <input id="ai-key" type="password" autocomplete="off" spellcheck="false" placeholder="sk-ant-…">
+    <p class="fine" data-i18n="ai_key_note"></p>
+    <label for="ai-model" data-i18n="ai_model"></label>
+    <input id="ai-model" type="text" spellcheck="false">
+    <div class="dlg-actions">
+      <button class="btn ghost" id="ai-remove" type="button" data-i18n="ai_remove"></button>
+      <span class="grow"></span>
+      <button class="btn ghost" value="cancel" data-i18n="ai_close"></button>
+      <button class="btn primary" id="ai-save" value="save" data-i18n="ai_save"></button>
+    </div>
+  </form>
+</dialog>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>

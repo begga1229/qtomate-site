@@ -1,0 +1,128 @@
+// QtoMate app strings. Order of languages: en, ru, uz, tr.
+export const LANGS = ["en", "ru", "uz", "tr"];
+export const LANG_NAMES = { en: "English", ru: "Русский", uz: "O‘zbekcha", tr: "Türkçe" };
+
+const T = {
+  title: ["QtoMate | Takeoff workspace", "QtoMate | Рабочая область подсчёта", "QtoMate | Hisoblash ish maydoni", "QtoMate | Metraj çalışma alanı"],
+  home: ["Back to the QtoMate site", "На сайт QtoMate", "QtoMate saytiga qaytish", "QtoMate sitesine dön"],
+  open_pdf: ["Open a PDF", "Открыть PDF", "PDF ochish", "PDF aç"],
+  open_other: ["Open another PDF", "Открыть другой PDF", "Boshqa PDF ochish", "Başka PDF aç"],
+  use_sample: ["Use the sample drawing", "Открыть пример чертежа", "Namuna chizmani ochish", "Örnek çizimi kullan"],
+  empty_h: ["Open a drawing to start measuring.", "Откройте чертёж, чтобы начать измерения.", "O‘lchashni boshlash uchun chizmani oching.", "Ölçmeye başlamak için bir çizim açın."],
+  empty_p: [
+    "Drop a PDF here or choose a file. The drawing is read in your browser and is not uploaded anywhere.",
+    "Перетащите сюда PDF или выберите файл. Чертёж читается в вашем браузере и никуда не загружается.",
+    "PDF faylni shu yerga tashlang yoki faylni tanlang. Chizma brauzeringizda o‘qiladi va hech qayerga yuklanmaydi.",
+    "PDF'i buraya bırakın ya da dosya seçin. Çizim tarayıcınızda okunur, hiçbir yere yüklenmez.",
+  ],
+  privacy_ai: [
+    "Only AI draft sends data out: an image of the current page goes to Anthropic's API with your own key.",
+    "Данные отправляются только при ИИ-черновике: изображение текущей страницы уходит в API Anthropic с вашим ключом.",
+    "Faqat AI qoralama ma’lumot yuboradi: joriy sahifa tasviri sizning kalitingiz bilan Anthropic API’ga jo‘natiladi.",
+    "Yalnızca yapay zekâ taslağı veri gönderir: geçerli sayfanın görüntüsü kendi anahtarınızla Anthropic API'sine gider.",
+  ],
+  tool_select: ["Select and pan", "Выбор и перемещение", "Tanlash va surish", "Seç ve kaydır"],
+  tool_length: ["Length", "Длина", "Uzunlik", "Uzunluk"],
+  tool_area: ["Area", "Площадь", "Maydon", "Alan"],
+  tool_count: ["Count", "Количество", "Sanash", "Adet"],
+  tool_scale: ["Scale", "Масштаб", "Masshtab", "Ölçek"],
+  tool_ai: ["AI draft (beta)", "ИИ-черновик (бета)", "AI qoralama (beta)", "Yapay zekâ taslağı (beta)"],
+  zoom_in: ["Zoom in", "Увеличить", "Kattalashtirish", "Yakınlaştır"],
+  zoom_out: ["Zoom out", "Уменьшить", "Kichiklashtirish", "Uzaklaştır"],
+  zoom_fit: ["Fit to window", "По размеру окна", "Oynaga moslash", "Pencereye sığdır"],
+  prev_page: ["Previous page", "Предыдущая страница", "Oldingi sahifa", "Önceki sayfa"],
+  next_page: ["Next page", "Следующая страница", "Keyingi sahifa", "Sonraki sayfa"],
+  page_of: ["Page {n} of {total}", "Страница {n} из {total}", "{total} sahifadan {n}-sahifa", "Sayfa {n} / {total}"],
+  page_short: ["p. {n}", "стр. {n}", "{n}-bet", "s. {n}"],
+  settings: ["AI settings", "Настройки ИИ", "AI sozlamalari", "Yapay zekâ ayarları"],
+  language: ["Language", "Язык", "Til", "Dil"],
+  units: ["Units", "Единицы", "Birliklar", "Birimler"],
+  metric: ["Metric", "Метрические", "Metrik", "Metrik"],
+  imperial: ["Imperial", "Имперские", "Imperial", "Emperyal"],
+
+  hint_select: ["Drag to move the sheet. Click a measurement to select it.", "Перетаскивайте лист. Нажмите на измерение, чтобы выбрать его.", "Varaqni surish uchun torting. Tanlash uchun o‘lchovni bosing.", "Paftayı taşımak için sürükleyin. Seçmek için bir ölçüme tıklayın."],
+  hint_length: ["Click along the run. Double-click or press Enter to finish. Hold Shift for straight lines.", "Кликайте вдоль линии. Двойной клик или Enter завершают. Shift выравнивает по осям.", "Chiziq bo‘ylab bosing. Tugatish uchun ikki marta bosing yoki Enter. To‘g‘ri chiziq uchun Shift.", "Hat boyunca tıklayın. Bitirmek için çift tıklayın ya da Enter'a basın. Düz çizgi için Shift."],
+  hint_area: ["Click each corner. Double-click or press Enter to close the shape. Hold Shift for straight lines.", "Кликайте по углам. Двойной клик или Enter замыкают контур. Shift выравнивает по осям.", "Har bir burchakni bosing. Shaklni yopish uchun ikki marta bosing yoki Enter. To‘g‘ri chiziq uchun Shift.", "Her köşeye tıklayın. Şekli kapatmak için çift tıklayın ya da Enter'a basın. Düz çizgi için Shift."],
+  hint_count: ["Click each item to count it. Press Enter to finish.", "Кликайте по каждому элементу. Enter завершает подсчёт.", "Sanash uchun har bir elementni bosing. Tugatish uchun Enter.", "Saymak için her elemana tıklayın. Bitirmek için Enter'a basın."],
+  hint_calibrate: ["Click two points whose real distance you know.", "Кликните две точки, расстояние между которыми вам известно.", "Orasidagi haqiqiy masofa ma’lum bo‘lgan ikki nuqtani bosing.", "Gerçek mesafesini bildiğiniz iki noktaya tıklayın."],
+  finish: ["Finish", "Готово", "Tugatish", "Bitir"],
+  cancel: ["Cancel", "Отмена", "Bekor qilish", "İptal"],
+  undo_point: ["Undo point", "Убрать точку", "Nuqtani bekor qilish", "Noktayı geri al"],
+
+  scale_h: ["Drawing scale", "Масштаб чертежа", "Chizma masshtabi", "Çizim ölçeği"],
+  scale_none: ["No scale set", "Масштаб не задан", "Masshtab berilmagan", "Ölçek girilmedi"],
+  scale_p: ["Pick the scale printed on the sheet, or calibrate from a known dimension.", "Выберите масштаб, указанный на листе, или откалибруйте по известному размеру.", "Varaqda ko‘rsatilgan masshtabni tanlang yoki ma’lum o‘lcham bo‘yicha kalibrlang.", "Paftada yazan ölçeği seçin ya da bilinen bir ölçüden kalibre edin."],
+  scale_custom: ["Other ratio, 1:", "Другой масштаб, 1:", "Boshqa nisbat, 1:", "Başka oran, 1:"],
+  scale_apply: ["Apply", "Применить", "Qo‘llash", "Uygula"],
+  scale_all: ["Use for all pages", "Применить ко всем страницам", "Barcha sahifalarga qo‘llash", "Tüm sayfalara uygula"],
+  scale_calibrate: ["Calibrate from two points", "Калибровать по двум точкам", "Ikki nuqta bo‘yicha kalibrlash", "İki noktadan kalibre et"],
+  scale_real: ["Real distance", "Реальное расстояние", "Haqiqiy masofa", "Gerçek mesafe"],
+  scale_calibrated: ["calibrated", "калибровка", "kalibrlangan", "kalibre"],
+  scale_needed: ["Set the scale to see this quantity", "Задайте масштаб, чтобы увидеть количество", "Miqdorni ko‘rish uchun masshtabni bering", "Miktarı görmek için ölçeği girin"],
+
+  boq_h: ["Bill of quantities", "Ведомость объёмов работ", "Ish hajmlari qaydnomasi", "Metraj cetveli"],
+  boq_empty: ["Nothing measured yet. Pick Length, Area or Count and click on the drawing.", "Пока ничего не измерено. Выберите «Длина», «Площадь» или «Количество» и кликайте по чертежу.", "Hali hech narsa o‘lchanmagan. Uzunlik, Maydon yoki Sanashni tanlab, chizmani bosing.", "Henüz bir şey ölçülmedi. Uzunluk, Alan ya da Adet'i seçip çizime tıklayın."],
+  col_desc: ["Description", "Наименование", "Nomi", "Açıklama"],
+  col_qty: ["Quantity", "Количество", "Miqdor", "Miktar"],
+  col_unit: ["Unit", "Ед. изм.", "Birlik", "Birim"],
+  col_method: ["Method", "Способ", "Usul", "Yöntem"],
+  col_source: ["Source", "Источник", "Manba", "Kaynak"],
+  col_scale: ["Scale", "Масштаб", "Masshtab", "Ölçek"],
+  col_status: ["Status", "Статус", "Holat", "Durum"],
+  col_origin: ["Origin", "Происхождение", "Kelib chiqishi", "Köken"],
+  name_length: ["Length {n}", "Длина {n}", "Uzunlik {n}", "Uzunluk {n}"],
+  name_area: ["Area {n}", "Площадь {n}", "Maydon {n}", "Alan {n}"],
+  name_count: ["Count {n}", "Количество {n}", "Sanash {n}", "Adet {n}"],
+  approve: ["Approve", "Утвердить", "Tasdiqlash", "Onayla"],
+  approved: ["Approved", "Утверждено", "Tasdiqlangan", "Onaylandı"],
+  draft: ["Draft", "Черновик", "Qoralama", "Taslak"],
+  origin_manual: ["Measured by hand", "Измерено вручную", "Qo‘lda o‘lchangan", "Elle ölçüldü"],
+  origin_ai: ["AI draft", "ИИ-черновик", "AI qoralama", "Yapay zekâ taslağı"],
+  delete: ["Delete", "Удалить", "O‘chirish", "Sil"],
+  progress: ["{done} of {total} lines approved", "Утверждено строк: {done} из {total}", "{total} qatordan {done} tasi tasdiqlandi", "{total} satırdan {done} tanesi onaylandı"],
+  export_xlsx: ["Export to Excel", "Экспорт в Excel", "Excel’ga eksport", "Excel'e aktar"],
+  export_csv: ["Export CSV", "Экспорт CSV", "CSV eksport", "CSV dışa aktar"],
+  unit_no: ["no.", "шт.", "dona", "adet"],
+  unit_m: ["m", "м", "m", "m"],
+  unit_m2: ["m²", "м²", "m²", "m²"],
+  unit_ft: ["ft", "фут", "fut", "ft"],
+  unit_ft2: ["ft²", "фут²", "fut²", "ft²"],
+
+  ai_h: ["AI draft settings", "Настройки ИИ-черновика", "AI qoralama sozlamalari", "Yapay zekâ taslağı ayarları"],
+  ai_p: [
+    "AI draft asks Claude to find rooms, walls, doors and windows on the current page and adds them as draft lines for you to check. It needs a Claude API key from platform.claude.com.",
+    "ИИ-черновик просит Claude найти на текущей странице помещения, стены, двери и окна и добавляет их черновыми строками для вашей проверки. Нужен ключ Claude API с platform.claude.com.",
+    "AI qoralama Claude’dan joriy sahifadagi xonalar, devorlar, eshik va derazalarni topishni so‘raydi va ularni siz tekshirishingiz uchun qoralama qatorlar sifatida qo‘shadi. Buning uchun platform.claude.com’dan olingan Claude API kaliti kerak.",
+    "Yapay zekâ taslağı, Claude'dan geçerli sayfadaki odaları, duvarları, kapı ve pencereleri bulmasını ister ve bunları kontrol etmeniz için taslak satır olarak ekler. platform.claude.com'dan alınmış bir Claude API anahtarı gerekir.",
+  ],
+  ai_key: ["Claude API key", "Ключ Claude API", "Claude API kaliti", "Claude API anahtarı"],
+  ai_key_note: [
+    "The key is stored only in this browser and is sent only to api.anthropic.com.",
+    "Ключ хранится только в этом браузере и отправляется только на api.anthropic.com.",
+    "Kalit faqat shu brauzerda saqlanadi va faqat api.anthropic.com’ga yuboriladi.",
+    "Anahtar yalnızca bu tarayıcıda saklanır ve yalnızca api.anthropic.com'a gönderilir.",
+  ],
+  ai_model: ["Model", "Модель", "Model", "Model"],
+  ai_save: ["Save", "Сохранить", "Saqlash", "Kaydet"],
+  ai_remove: ["Remove key", "Удалить ключ", "Kalitni o‘chirish", "Anahtarı kaldır"],
+  ai_close: ["Close", "Закрыть", "Yopish", "Kapat"],
+  ai_working: ["Asking Claude to read this page…", "Claude читает эту страницу…", "Claude bu sahifani o‘qimoqda…", "Claude bu sayfayı okuyor…"],
+  ai_done: ["AI added {n} draft lines. Check each one before approving.", "ИИ добавил черновых строк: {n}. Проверьте каждую перед утверждением.", "AI {n} ta qoralama qator qo‘shdi. Tasdiqlashdan oldin har birini tekshiring.", "Yapay zekâ {n} taslak satır ekledi. Onaylamadan önce her birini kontrol edin."],
+  ai_scale: ["Scale read from the sheet: {s}. Check it.", "Масштаб прочитан с листа: {s}. Проверьте его.", "Varaqdan o‘qilgan masshtab: {s}. Uni tekshiring.", "Paftadan okunan ölçek: {s}. Kontrol edin."],
+  ai_none: ["Claude did not find anything measurable on this page.", "Claude не нашёл на этой странице ничего измеримого.", "Claude bu sahifada o‘lchanadigan narsa topmadi.", "Claude bu sayfada ölçülebilir bir şey bulamadı."],
+  ai_need_key: ["Add your Claude API key first.", "Сначала добавьте ключ Claude API.", "Avval Claude API kalitingizni qo‘shing.", "Önce Claude API anahtarınızı ekleyin."],
+  ai_error: ["AI draft failed: {msg}", "ИИ-черновик не удался: {msg}", "AI qoralama bajarilmadi: {msg}", "Yapay zekâ taslağı başarısız oldu: {msg}"],
+  err_pdf: ["This file could not be opened as a PDF.", "Не удалось открыть этот файл как PDF.", "Bu faylni PDF sifatida ochib bo‘lmadi.", "Bu dosya PDF olarak açılamadı."],
+  restored: ["Restored {n} saved lines for this file.", "Восстановлено сохранённых строк для этого файла: {n}.", "Bu fayl uchun saqlangan {n} ta qator tiklandi.", "Bu dosya için kayıtlı {n} satır geri yüklendi."],
+  sample_name: ["Sample: A-101 ground floor plan", "Пример: A-101, план первого этажа", "Namuna: A-101, birinchi qavat rejasi", "Örnek: A-101 zemin kat planı"],
+};
+
+export function makeT(lang) {
+  const i = Math.max(0, LANGS.indexOf(lang));
+  return function t(key, vars) {
+    const entry = T[key];
+    let s = entry ? entry[i] : key;
+    if (vars) for (const k in vars) s = s.replace("{" + k + "}", vars[k]);
+    return s;
+  };
+}
