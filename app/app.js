@@ -2,7 +2,8 @@
 // Everything runs in the browser. The PDF is never uploaded; only "AI draft"
 // sends an image of the current page to the Anthropic API with the user's own key.
 import * as pdfjsLib from "./vendor/pdf.min.mjs";
-import { LANGS, LANG_NAMES, makeT } from "./i18n.js";
+import { LANGS, LANG_NAMES, makeT } from "./i18n.js?v=20261009a";
+import { SnapIndex, buildSnapIndex } from "./snap.js?v=20261009a";
 
 const VENDOR = new URL("./vendor/", import.meta.url).href;
 pdfjsLib.GlobalWorkerOptions.workerSrc = VENDOR + "pdf.worker.min.mjs";
@@ -32,10 +33,24 @@ const state = {
   draft: null, // { type, points }
   cursor: null,
   calibPts: null,
+  snapOn: true,
+  snap: null, // { x, y, kind } under the cursor
+  snapIndex: null, // geometry of the current page, once it has been read
 };
 let t = makeT("en");
-let renderTask = null;
 let renderSeq = 0;
+let curPage = null;
+let baseTask = null, baseKey = "", baseRs = 0;
+let detailTask = null, detailTimer = 0;
+const MAX_BASE_PIXELS = 12e6; // whole-page bitmap; sharper detail is drawn only for the visible part
+const ZOOM_MIN = 0.05, ZOOM_MAX = 16;
+const snapCache = new Map(); // page number -> SnapIndex or a promise of one
+let snapNoticeShown = false;
+const hist = { undo: [], redo: [] };
+let lastPtr = null; // last pointer position over the sheet
+let overSheet = false;
+let spaceDown = false;
+let edit = null; // corner being dragged: { id, index, insert, moved }
 
 /* ------------------------------------------------------------------ i18n */
 function pickLang() {
@@ -54,11 +69,12 @@ function applyLang(lang) {
   document.documentElement.lang = lang;
   document.title = t("title");
   document.querySelectorAll("[data-i18n]").forEach((el) => { el.textContent = t(el.dataset.i18n); });
-  document.querySelectorAll("[data-i18n-title]").forEach((el) => { el.title = t(el.dataset.i18nTitle); });
+  document.querySelectorAll("[data-i18n-title]").forEach((el) => { el.title = t(el.dataset.i18nTitle) + (el.dataset.key ? ` (${el.dataset.key})` : ""); });
   document.querySelectorAll("[data-i18n-aria]").forEach((el) => { el.setAttribute("aria-label", t(el.dataset.i18nAria)); });
   $("home-link").href = lang === "en" ? "../" : `../${lang}/`;
   $("lang").value = lang;
   buildPresets();
+  buildCalibUnits();
   updateHint();
   if (state.pdf) { updatePageLabel(); updateScaleChip(); drawOverlay(); renderRows(); }
 }
@@ -105,6 +121,21 @@ function qtyText(item) {
   const q = measure(item);
   return q.ok ? `${fmt(q.value, q.decimals)} ${q.unit}` : null;
 }
+/** Length in page points as text in the current units, or null when the page has no scale. */
+function lenText(pt, pageNum) {
+  const sc = pageScale(pageNum || state.pageNum);
+  if (!sc) return null;
+  const imperial = state.unitSystem === "imperial";
+  const m = pt * sc.mpp;
+  return `${fmt(imperial ? m * FT_PER_M : m, 2)} ${t(imperial ? "unit_ft" : "unit_m")}`;
+}
+function areaText(pt2, pageNum) {
+  const sc = pageScale(pageNum || state.pageNum);
+  if (!sc) return null;
+  const imperial = state.unitSystem === "imperial";
+  const m2 = pt2 * sc.mpp * sc.mpp;
+  return `${fmt(imperial ? m2 * FT_PER_M * FT_PER_M : m2, 2)} ${t(imperial ? "unit_ft2" : "unit_m2")}`;
+}
 
 /* -------------------------------------------------------------- storage */
 function save() {
@@ -128,6 +159,38 @@ function restore() {
     state.counters = Object.assign({ length: 0, area: 0, count: 0 }, d.counters);
     return state.items.length;
   } catch (e) { return 0; }
+}
+
+/* -------------------------------------------------------------- history */
+const snapshot = () => JSON.stringify({ items: state.items, counters: state.counters, scales: state.scales, scaleAll: state.scaleAll });
+function pushHistory() {
+  hist.undo.push(snapshot());
+  if (hist.undo.length > 80) hist.undo.shift();
+  hist.redo.length = 0;
+  updateHistoryButtons();
+}
+function applySnapshot(json) {
+  const d = JSON.parse(json);
+  state.items = d.items; state.counters = d.counters; state.scales = d.scales; state.scaleAll = d.scaleAll;
+  if (!state.items.some((i) => i.id === state.selectedId)) state.selectedId = null;
+  save(); updateScaleChip(); renderRows(); drawOverlay(); updateHistoryButtons();
+}
+function undo() {
+  if (state.draft && state.draft.points.length) { undoPoint(); return; }
+  const s = hist.undo.pop();
+  if (!s) return;
+  hist.redo.push(snapshot());
+  applySnapshot(s);
+}
+function redo() {
+  const s = hist.redo.pop();
+  if (!s) return;
+  hist.undo.push(snapshot());
+  applySnapshot(s);
+}
+function updateHistoryButtons() {
+  $("undo-btn").disabled = !hist.undo.length && !(state.draft && state.draft.points.length);
+  $("redo-btn").disabled = !hist.redo.length;
 }
 
 /* ---------------------------------------------------------------- toast */
@@ -165,6 +228,10 @@ async function openPdf(buffer, name, size) {
   state.items = []; state.scales = {}; state.scaleAll = null;
   state.counters = { length: 0, area: 0, count: 0 };
   state.selectedId = null; state.draft = null; state.calibPts = null;
+  state.snap = null; state.snapIndex = null; state.cursor = null;
+  snapCache.clear(); snapNoticeShown = false;
+  hist.undo.length = 0; hist.redo.length = 0;
+  baseKey = ""; curPage = null;
   const restored = restore();
   $("unit-system").value = state.unitSystem;
   $("file-name").textContent = name;
@@ -175,6 +242,7 @@ async function openPdf(buffer, name, size) {
   buildPresets();
   await renderPage(true);
   renderRows();
+  updateHistoryButtons();
   if (restored) toast(t("restored", { n: restored }));
 }
 
@@ -197,40 +265,162 @@ async function openSample() {
 }
 
 /* ------------------------------------------------------------- rendering */
+const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+const pixelRatio = () => Math.min(window.devicePixelRatio || 1, 2);
+
+function layoutSheet() {
+  const cssW = state.pageSize.w * state.zoom, cssH = state.pageSize.h * state.zoom;
+  const canvas = $("canvas");
+  canvas.style.width = cssW + "px"; canvas.style.height = cssH + "px";
+  $("sheet").style.width = cssW + "px"; $("sheet").style.height = cssH + "px";
+  $("overlay").setAttribute("viewBox", `0 0 ${state.pageSize.w} ${state.pageSize.h}`);
+  $("zoom-label").textContent = Math.round(state.zoom * 100) + "%";
+}
+
 async function renderPage(fit) {
   const seq = ++renderSeq;
-  const page = await state.pdf.getPage(state.pageNum);
+  const pageNum = state.pageNum;
+  const page = await state.pdf.getPage(pageNum);
   if (seq !== renderSeq) return;
+  curPage = page;
   const vp1 = page.getViewport({ scale: 1 });
   state.pageSize = { w: vp1.width, h: vp1.height };
   const scroller = $("scroller");
   if (fit) {
     const z = Math.min((scroller.clientWidth - 48) / vp1.width, (scroller.clientHeight - 48) / vp1.height);
-    state.zoom = clamp(z || 1, 0.1, 8);
+    state.zoom = clamp(z || 1, ZOOM_MIN, ZOOM_MAX);
   }
-  const dpr = Math.min(window.devicePixelRatio || 1, 2);
-  let rs = state.zoom * dpr;
-  const maxPixels = 24e6;
-  if (vp1.width * vp1.height * rs * rs > maxPixels) rs = Math.sqrt(maxPixels / (vp1.width * vp1.height));
-  const vp = page.getViewport({ scale: rs });
-  const canvas = $("canvas");
-  if (renderTask) { try { renderTask.cancel(); } catch (e) { /* ignore */ } }
-  canvas.width = Math.floor(vp.width);
-  canvas.height = Math.floor(vp.height);
-  const cssW = vp1.width * state.zoom, cssH = vp1.height * state.zoom;
-  canvas.style.width = cssW + "px"; canvas.style.height = cssH + "px";
-  const overlay = $("overlay");
-  overlay.setAttribute("viewBox", `0 0 ${vp1.width} ${vp1.height}`);
-  $("sheet").style.width = cssW + "px"; $("sheet").style.height = cssH + "px";
-  $("zoom-label").textContent = Math.round(state.zoom * 100) + "%";
+  hideDetail();
+  layoutSheet();
   updatePageLabel(); updateScaleChip(); drawOverlay();
-  renderTask = page.render({ canvas, canvasContext: canvas.getContext("2d"), viewport: vp });
-  try { await renderTask.promise; } catch (e) { if (e && e.name !== "RenderingCancelledException") console.error(e); }
+  useSnapIndex();
+
+  // The whole page is drawn once at a bounded size. Beyond that size, only the part
+  // on screen is drawn at full sharpness (see renderDetail).
+  const need = state.zoom * pixelRatio();
+  const rs = Math.min(need, Math.sqrt(MAX_BASE_PIXELS / (vp1.width * vp1.height)));
+  const key = `${state.fileKey}|${pageNum}|${rs.toFixed(4)}`;
+  if (key !== baseKey) {
+    if (baseTask) { try { baseTask.cancel(); } catch (e) { /* ignore */ } }
+    const old = $("canvas");
+    if (!baseKey.startsWith(`${state.fileKey}|${pageNum}|`)) old.width = old.width; // another page: clear it
+    baseKey = "";
+    const vp = page.getViewport({ scale: rs });
+    const c = document.createElement("canvas");
+    c.width = Math.max(1, Math.floor(vp.width)); c.height = Math.max(1, Math.floor(vp.height));
+    const task = baseTask = page.render({ canvas: c, canvasContext: c.getContext("2d"), viewport: vp });
+    try { await task.promise; } catch (e) {
+      if (e && e.name !== "RenderingCancelledException") console.error(e);
+      return;
+    }
+    if (seq !== renderSeq) return;
+    c.id = "canvas";
+    $("canvas").replaceWith(c);
+    baseKey = key; baseRs = rs;
+    layoutSheet();
+  }
+  scheduleDetail(0);
 }
-const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+
+function hideDetail() {
+  clearTimeout(detailTimer);
+  if (detailTask) { try { detailTask.cancel(); } catch (e) { /* ignore */ } detailTask = null; }
+  $("detail").hidden = true;
+}
+function scheduleDetail(delay) {
+  clearTimeout(detailTimer);
+  detailTimer = setTimeout(renderDetail, delay);
+}
+/** Draws the visible part of the sheet at full resolution on top of the base bitmap. */
+async function renderDetail() {
+  if (!state.pdf || !curPage || !baseKey) return;
+  const dpr = pixelRatio();
+  const need = state.zoom * dpr;
+  if (baseRs >= need * 0.999) { $("detail").hidden = true; return; }
+  const seq = renderSeq, zoom = state.zoom, page = curPage;
+  const sc = $("scroller").getBoundingClientRect(), sh = $("sheet").getBoundingClientRect();
+  const mx = sc.width * 0.25, my = sc.height * 0.25;
+  const x0 = Math.floor(clamp(sc.left - sh.left - mx, 0, sh.width)), x1 = Math.ceil(clamp(sc.right - sh.left + mx, 0, sh.width));
+  const y0 = Math.floor(clamp(sc.top - sh.top - my, 0, sh.height)), y1 = Math.ceil(clamp(sc.bottom - sh.top + my, 0, sh.height));
+  if (x1 - x0 < 2 || y1 - y0 < 2) { $("detail").hidden = true; return; }
+  const c = document.createElement("canvas");
+  c.width = Math.round((x1 - x0) * dpr); c.height = Math.round((y1 - y0) * dpr);
+  if (detailTask) { try { detailTask.cancel(); } catch (e) { /* ignore */ } }
+  const task = detailTask = page.render({
+    canvas: c, canvasContext: c.getContext("2d"),
+    viewport: page.getViewport({ scale: need }),
+    transform: [1, 0, 0, 1, -x0 * dpr, -y0 * dpr],
+  });
+  try { await task.promise; } catch (e) {
+    if (e && e.name !== "RenderingCancelledException") console.error(e);
+    return;
+  }
+  if (detailTask === task) detailTask = null;
+  if (seq !== renderSeq || zoom !== state.zoom || page !== curPage) return;
+  c.id = "detail";
+  c.style.left = x0 + "px"; c.style.top = y0 + "px";
+  c.style.width = (x1 - x0) + "px"; c.style.height = (y1 - y0) + "px";
+  $("detail").replaceWith(c);
+}
+
+/* -------------------------------------------------------------- snapping */
+function useSnapIndex() {
+  const n = state.pageNum, pdf = state.pdf;
+  const hit = snapCache.get(n);
+  state.snapIndex = hit instanceof SnapIndex ? hit : null;
+  updateSnapButton();
+  if (hit) return;
+  const job = pdf.getPage(n).then((page) => buildSnapIndex(page, pdfjsLib)).then((index) => {
+    if (state.pdf !== pdf) return;
+    snapCache.set(n, index);
+    for (const k of snapCache.keys()) { if (snapCache.size <= 6) break; if (k !== state.pageNum) snapCache.delete(k); }
+    if (state.pageNum !== n) return;
+    state.snapIndex = index;
+    updateSnapButton();
+    if (!index.count && state.snapOn && !snapNoticeShown) { snapNoticeShown = true; toast(t("snap_none")); }
+    if (lastPtr && overSheet) onMove(lastPtr);
+  }).catch((e) => { console.error(e); if (state.pdf === pdf) snapCache.delete(n); });
+  snapCache.set(n, job);
+}
+function updateSnapButton() {
+  const b = $("snap-btn");
+  b.setAttribute("aria-pressed", state.snapOn ? "true" : "false");
+  b.classList.toggle("loading", state.snapOn && !!state.pdf && !state.snapIndex);
+  b.classList.toggle("empty", !!state.snapIndex && !state.snapIndex.count);
+}
+function setSnap(on) {
+  state.snapOn = on;
+  try { localStorage.setItem("qtomate:snap", on ? "1" : "0"); } catch (e) { /* ignore */ }
+  if (!on) state.snap = null;
+  updateSnapButton();
+  if (lastPtr && overSheet) onMove(lastPtr); else drawLive();
+}
+/** Nearest real point to p: the drawing's own geometry, or a corner of a measurement. */
+function findSnap(p, exclude) {
+  const z = state.zoom;
+  const tolPoint = 11 / z, tolLine = 7 / z;
+  const best = state.snapIndex ? state.snapIndex.query(p[0], p[1], tolPoint, tolLine) : null;
+  let vd = tolPoint, v = null;
+  const test = (q) => { const d = dist(p, q); if (d < vd) { vd = d; v = q; } };
+  for (const it of state.items) {
+    if (it.page !== state.pageNum) continue;
+    for (let i = 0; i < it.points.length; i++) {
+      if (exclude && exclude.id === it.id && exclude.index === i) continue;
+      test(it.points[i]);
+    }
+  }
+  if (state.draft) state.draft.points.forEach(test);
+  if (state.calibPts) state.calibPts.forEach(test);
+  if (v && (!best || best.kind === "line" || vd <= best.d + 0.5 / z)) return { x: v[0], y: v[1], kind: "vertex", d: vd };
+  return best;
+}
 
 function updatePageLabel() {
-  $("page-label").textContent = t("page_of", { n: state.pageNum, total: state.pageCount });
+  const input = $("page-input");
+  if (document.activeElement !== input) input.value = state.pageNum;
+  input.max = state.pageCount;
+  input.title = t("page_of", { n: state.pageNum, total: state.pageCount });
+  $("page-total").textContent = "/ " + state.pageCount;
   $("prev").disabled = state.pageNum <= 1;
   $("next").disabled = state.pageNum >= state.pageCount;
 }
@@ -242,34 +432,33 @@ function updateScaleChip() {
   document.querySelectorAll("#presets button").forEach((b) => b.setAttribute("aria-pressed", sc && b.dataset.label === sc.label ? "true" : "false"));
 }
 async function goToPage(n) {
-  n = clamp(n, 1, state.pageCount);
-  if (n === state.pageNum) return;
+  n = clamp(Math.round(n) || 1, 1, state.pageCount);
+  if (n === state.pageNum) { updatePageLabel(); return; }
   cancelDraft();
   state.pageNum = n;
   await renderPage(true);
+  $("scroller").scrollTo(0, 0);
 }
 let zoomTimer = 0;
 function setZoom(z, anchor) {
   const scroller = $("scroller");
   const old = state.zoom;
-  z = clamp(z, 0.1, 8);
+  z = clamp(z, ZOOM_MIN, ZOOM_MAX);
   if (Math.abs(z - old) < 1e-4) return;
   const rect = scroller.getBoundingClientRect();
-  const ax = anchor ? anchor.x - rect.left : rect.width / 2;
-  const ay = anchor ? anchor.y - rect.top : rect.height / 2;
+  const ax = anchor ? anchor.x : rect.left + rect.width / 2;
+  const ay = anchor ? anchor.y : rect.top + rect.height / 2;
   const sheet = $("sheet").getBoundingClientRect();
-  const px = (anchor ? anchor.x : rect.left + ax) - sheet.left; // position on sheet in css px
-  const py = (anchor ? anchor.y : rect.top + ay) - sheet.top;
-  state.zoom = z;
+  const px = ax - sheet.left, py = ay - sheet.top; // anchor on the sheet, css px
   const k = z / old;
-  const cssW = state.pageSize.w * z, cssH = state.pageSize.h * z;
-  $("canvas").style.width = cssW + "px"; $("canvas").style.height = cssH + "px";
-  $("sheet").style.width = cssW + "px"; $("sheet").style.height = cssH + "px";
-  $("zoom-label").textContent = Math.round(z * 100) + "%";
+  state.zoom = z;
+  $("detail").hidden = true;
+  layoutSheet();
   const sheet2 = $("sheet").getBoundingClientRect();
-  scroller.scrollLeft += (sheet2.left + px * k) - (rect.left + ax);
-  scroller.scrollTop += (sheet2.top + py * k) - (rect.top + ay);
+  scroller.scrollLeft += (sheet2.left + px * k) - ax;
+  scroller.scrollTop += (sheet2.top + py * k) - ay;
   drawOverlay();
+  if (lastPtr && overSheet) onMove(lastPtr);
   clearTimeout(zoomTimer);
   zoomTimer = setTimeout(() => renderPage(false), 120);
 }
@@ -298,13 +487,28 @@ function labelAnchor(item) {
   return [p[0][0] + 12 / state.zoom, p[0][1] - 10 / state.zoom];
 }
 
-function drawOverlay() {
+function layer(id) {
   const svg = $("overlay");
-  while (svg.firstChild) svg.removeChild(svg.firstChild);
+  let g = svg.querySelector("#" + id);
+  if (!g) g = el("g", { id }, svg);
+  while (g.firstChild) g.removeChild(g.firstChild);
+  return g;
+}
+
+function drawOverlay() {
+  drawItems();
+  drawLive();
+}
+
+function drawItems() {
+  const svg = layer("g-items");
   const z = state.zoom;
-  for (const item of state.items) {
-    if (item.page !== state.pageNum) continue;
-    const cls = ["item", item.origin === "ai" ? "ai" : "", item.status === "approved" ? "approved" : "", item.id === state.selectedId ? "selected" : ""].join(" ");
+  // the selected measurement is drawn last so that it, and its corners, stay on top
+  const onPage = state.items.filter((i) => i.page === state.pageNum);
+  onPage.sort((a, b) => (a.id === state.selectedId) - (b.id === state.selectedId));
+  for (const item of onPage) {
+    const selected = item.id === state.selectedId;
+    const cls = ["item", item.origin === "ai" ? "ai" : "", item.status === "approved" ? "approved" : "", selected ? "selected" : ""].join(" ");
     const g = el("g", { class: cls, "data-id": item.id }, svg);
     if (item.type === "length") {
       el("polyline", { class: "shape length", points: ptsAttr(item.points) }, g);
@@ -312,7 +516,7 @@ function drawOverlay() {
     } else if (item.type === "area") {
       el("polygon", { class: "shape area", points: ptsAttr(item.points) }, g);
     } else {
-      for (const p of item.points) el("circle", { class: "dot", cx: p[0], cy: p[1], r: 6.5 / z }, g);
+      item.points.forEach((p, i) => el("circle", { class: "dot", cx: p[0], cy: p[1], r: 6.5 / z, "data-i": i }, g));
     }
     const q = qtyText(item);
     if (q) {
@@ -320,11 +524,34 @@ function drawOverlay() {
       const txt = el("text", { class: "label", x: a[0], y: a[1], "font-size": 13 / z, "text-anchor": item.type === "count" ? "start" : "middle" }, g);
       txt.textContent = item.type === "count" ? `${item.name}: ${q}` : q;
     }
+    // corners of the selected measurement can be dragged
+    if (selected && state.tool === "select" && item.type !== "count") {
+      const p = item.points, n = p.length;
+      const edges = item.type === "area" ? n : n - 1;
+      for (let i = 0; i < edges; i++) {
+        const a = p[i], b = p[(i + 1) % n];
+        if (dist(a, b) * z > 44) el("circle", { class: "handle mid", cx: (a[0] + b[0]) / 2, cy: (a[1] + b[1]) / 2, r: 4 / z, "data-i": i + 1 }, g);
+      }
+      p.forEach((q2, i) => el("circle", { class: "handle", cx: q2[0], cy: q2[1], r: 5.5 / z, "data-i": i }, g));
+    }
   }
-  // draft in progress
+}
+
+const MARKS = {
+  end: (x, y, r) => `M${x - r} ${y - r}h${2 * r}v${2 * r}h${-2 * r}z`,
+  vertex: (x, y, r) => `M${x} ${y - r * 1.25}L${x + r * 1.25} ${y}L${x} ${y + r * 1.25}L${x - r * 1.25} ${y}z`,
+  mid: (x, y, r) => `M${x} ${y - r}L${x + r} ${y + r}L${x - r} ${y + r}z`,
+  int: (x, y, r) => `M${x - r} ${y - r}L${x + r} ${y + r}M${x + r} ${y - r}L${x - r} ${y + r}`,
+  line: (x, y, r) => `M${x - r} ${y}a${r} ${r} 0 1 0 ${2 * r} 0a${r} ${r} 0 1 0 ${-2 * r} 0`,
+};
+
+/** Draws what follows the cursor: the shape being drawn and the snap marker. */
+function drawLive() {
+  const svg = layer("g-live");
+  const z = state.zoom;
   const d = state.draft;
   if (d && d.points.length) {
-    const pts = state.cursor ? d.points.concat([state.cursor]) : d.points;
+    const pts = state.cursor && d.type !== "count" ? d.points.concat([state.cursor]) : d.points;
     if (d.type === "area" && pts.length >= 3) el("polygon", { class: "draft", points: ptsAttr(pts) }, svg);
     else if (d.type !== "count") el("polyline", { class: "draft", points: ptsAttr(pts), fill: "none" }, svg);
     for (const p of d.points) el("circle", { class: "draft-dot", cx: p[0], cy: p[1], r: (d.type === "count" ? 6.5 : 4) / z }, svg);
@@ -334,50 +561,130 @@ function drawOverlay() {
     el("polyline", { class: "draft", points: ptsAttr(pts), fill: "none" }, svg);
     for (const p of state.calibPts) el("circle", { class: "draft-dot", cx: p[0], cy: p[1], r: 4 / z }, svg);
   }
+  const s = state.snap;
+  if (s && MARKS[s.kind]) {
+    const path = MARKS[s.kind](s.x, s.y, 6.5 / z);
+    el("path", { class: "snap-halo", d: path }, svg);
+    el("path", { class: "snap-mark " + s.kind, d: path }, svg);
+  }
+}
+
+/** The small box next to the cursor with the live quantity. */
+function updateReadout() {
+  const box = $("readout");
+  const lines = [];
+  const d = state.draft, cur = state.cursor;
+  if (state.tool === "calibrate") {
+    if (state.calibPts && state.calibPts.length === 1 && cur) { const s = lenText(dist(state.calibPts[0], cur)); if (s) lines.push([s, "main"]); }
+  } else if (d && d.points.length && d.type === "count") {
+    lines.push([`${d.points.length} ${t("unit_no")}`, "main"]);
+  } else if (d && d.points.length && cur) {
+    const pts = d.points.concat([cur]);
+    const seg = lenText(dist(d.points[d.points.length - 1], cur));
+    if (!seg) lines.push([t("scale_none"), "warn"]);
+    else if (d.type === "length") {
+      lines.push([seg, "main"]);
+      if (pts.length > 2) lines.push([`${t("total")} ${lenText(polyLength(pts))}`, ""]);
+    } else {
+      if (pts.length >= 3) lines.push([areaText(polyArea(pts)), "main"]);
+      lines.push([seg, pts.length >= 3 ? "" : "main"]);
+    }
+  }
+  if (state.snap && state.tool !== "select") lines.push([t("snap_" + state.snap.kind), "snap"]);
+  if (!lines.length || !lastPtr || !overSheet) { box.hidden = true; return; }
+  box.textContent = "";
+  for (const [text, cls] of lines) {
+    const row = document.createElement("div");
+    if (cls) row.className = cls;
+    row.textContent = text;
+    box.appendChild(row);
+  }
+  box.hidden = false;
+  const w = box.offsetWidth, h = box.offsetHeight;
+  let x = lastPtr.clientX + 20, y = lastPtr.clientY + 22;
+  if (x + w > window.innerWidth - 8) x = lastPtr.clientX - w - 16;
+  if (y + h > window.innerHeight - 8) y = lastPtr.clientY - h - 16;
+  box.style.left = Math.max(4, x) + "px"; box.style.top = Math.max(4, y) + "px";
 }
 
 /* ------------------------------------------------------------------ tools */
+const measuring = () => state.tool !== "select";
+
 function setTool(tool) {
-  if (state.tool !== tool) { state.draft = null; state.calibPts = null; state.cursor = null; }
+  if (state.tool !== tool) { state.draft = null; state.calibPts = null; state.cursor = null; state.snap = null; }
   state.tool = tool;
   $("stage").dataset.tool = tool;
   document.querySelectorAll(".tool[data-tool]").forEach((b) => b.setAttribute("aria-pressed", b.dataset.tool === tool ? "true" : "false"));
   $("calib-form").hidden = true;
   updateHint();
   drawOverlay();
+  updateReadout();
 }
 function updateHint() {
   const key = { select: "hint_select", length: "hint_length", area: "hint_area", count: "hint_count", calibrate: "hint_calibrate" }[state.tool];
   $("hint-text").textContent = t(key);
   $("hint-actions").hidden = !(state.draft && state.draft.points.length);
-  $("calib-unit").textContent = t(state.unitSystem === "imperial" ? "unit_ft" : "unit_m");
+  if ($("undo-btn")) updateHistoryButtons();
 }
-function toPt(evt) {
+function toPt(src) {
   const r = $("overlay").getBoundingClientRect();
-  return [clamp((evt.clientX - r.left) / state.zoom, 0, state.pageSize.w), clamp((evt.clientY - r.top) / state.zoom, 0, state.pageSize.h)];
+  return [clamp((src.clientX - r.left) / state.zoom, 0, state.pageSize.w), clamp((src.clientY - r.top) / state.zoom, 0, state.pageSize.h)];
 }
-function ortho(p, last) {
-  return Math.abs(p[0] - last[0]) >= Math.abs(p[1] - last[1]) ? [p[0], last[1]] : [last[0], p[1]];
+/** Locks the direction from `last` to p to the nearest of 0°, 45°, 90°... */
+function constrain(p, last) {
+  const dx = p[0] - last[0], dy = p[1] - last[1];
+  const step = Math.PI / 4;
+  const ang = Math.round(Math.atan2(dy, dx) / step) * step;
+  const ux = Math.cos(ang), uy = Math.sin(ang);
+  const len = dx * ux + dy * uy;
+  return [last[0] + ux * len, last[1] + uy * len];
+}
+/** Where a click at this pointer position lands: snapped, then angle-locked with Shift. */
+function resolvePoint(src, last, exclude) {
+  let p = toPt(src), snap = null;
+  if (state.snapOn && !src.altKey && state.tool !== "count") {
+    snap = findSnap(p, exclude);
+    if (snap) p = [snap.x, snap.y];
+  }
+  if (src.shiftKey && last) p = constrain(p, last);
+  return { p, snap };
+}
+const lastDraftPoint = () => {
+  if (state.tool === "calibrate") return state.calibPts && state.calibPts.length === 1 ? state.calibPts[0] : null;
+  const d = state.draft;
+  return d && d.points.length && d.type !== "count" ? d.points[d.points.length - 1] : null;
+};
+
+/** Pointer moved over the sheet (or a modifier key changed): update cursor, snap marker and readout. */
+function onMove(src) {
+  lastPtr = { clientX: src.clientX, clientY: src.clientY, shiftKey: !!src.shiftKey, altKey: !!src.altKey };
+  if (!measuring() || !state.pdf) {
+    if (state.snap || state.cursor) { state.snap = null; state.cursor = null; drawLive(); }
+    updateReadout();
+    return;
+  }
+  const r = resolvePoint(lastPtr, lastDraftPoint());
+  state.cursor = r.p; state.snap = r.snap;
+  drawLive();
+  updateReadout();
 }
 
 function addPoint(evt) {
-  let p = toPt(evt);
+  const { p } = resolvePoint(evt, lastDraftPoint());
   if (state.tool === "calibrate") {
     if (!state.calibPts || state.calibPts.length >= 2) state.calibPts = [];
-    if (evt.shiftKey && state.calibPts.length === 1) p = ortho(p, state.calibPts[0]);
     state.calibPts.push(p);
     if (state.calibPts.length === 2) { $("calib-form").hidden = false; $("calib-value").value = ""; $("calib-value").focus(); }
-    drawOverlay();
+    drawLive(); updateReadout();
     return;
   }
   if (!state.draft) state.draft = { type: state.tool, points: [] };
   const pts = state.draft.points;
-  if (evt.shiftKey && pts.length && state.tool !== "count") p = ortho(p, pts[pts.length - 1]);
   // clicking the first corner again closes an area
   if (state.tool === "area" && pts.length >= 3 && dist(p, pts[0]) < 9 / state.zoom) { finishDraft(); return; }
   pts.push(p);
   updateHint();
-  drawOverlay();
+  drawLive(); updateReadout();
 }
 
 function finishDraft() {
@@ -385,9 +692,11 @@ function finishDraft() {
   if (!d) return;
   // drop repeated points left behind by a double-click
   const pts = d.points.filter((p, i) => i === 0 || d.type === "count" || dist(p, d.points[i - 1]) > 1.5 / state.zoom);
+  if (d.type === "area" && pts.length > 3 && dist(pts[0], pts[pts.length - 1]) <= 1.5 / state.zoom) pts.pop();
   const min = { length: 2, area: 3, count: 1 }[d.type];
   state.draft = null; state.cursor = null;
   if (pts.length >= min) {
+    pushHistory();
     state.counters[d.type] = (state.counters[d.type] || 0) + 1;
     const item = {
       id: "m" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
@@ -402,20 +711,20 @@ function finishDraft() {
     if (input) { input.focus(); input.select(); }
   }
   updateHint();
-  drawOverlay();
+  drawOverlay(); updateReadout();
 }
 function cancelDraft() {
-  state.draft = null; state.calibPts = null; state.cursor = null;
+  state.draft = null; state.calibPts = null; state.cursor = null; state.snap = null;
   $("calib-form").hidden = true;
   updateHint();
-  drawOverlay();
+  drawOverlay(); updateReadout();
 }
 function undoPoint() {
   if (state.draft && state.draft.points.length) {
     state.draft.points.pop();
     if (!state.draft.points.length) state.draft = null;
     updateHint();
-    drawOverlay();
+    if (lastPtr && overSheet) onMove(lastPtr); else { drawLive(); updateReadout(); }
   }
 }
 
@@ -437,6 +746,7 @@ function buildPresets() {
   if (state.pdf) updateScaleChip();
 }
 function applyScale(sc) {
+  pushHistory();
   if ($("scale-all").checked) { state.scaleAll = sc; state.scales = {}; }
   else state.scales[state.pageNum] = sc;
   save();
@@ -467,6 +777,7 @@ function renderRows() {
     ok.setAttribute("aria-label", ok.title + ": " + item.name);
     ok.addEventListener("click", (e) => {
       e.stopPropagation();
+      pushHistory();
       item.status = item.status === "approved" ? "draft" : "approved";
       save(); renderRows(); drawOverlay();
     });
@@ -492,6 +803,7 @@ function renderRows() {
     const meta = document.createElement("div");
     meta.className = "meta";
     const chips = [[t("page_short", { n: item.page }), ""], [t("tool_" + item.type), ""]];
+    if (item.type === "area") { const per = lenText(polyLength(item.points.concat([item.points[0]])), item.page); if (per) chips.push([`${t("perimeter")} ${per}`, ""]); }
     if (item.origin === "ai") chips.push([t("origin_ai"), "ai"]);
     for (const [text, cls] of chips) {
       const c = document.createElement("span");
@@ -521,6 +833,7 @@ async function selectItem(id, jump) {
   drawOverlay();
 }
 function removeItem(id) {
+  pushHistory();
   state.items = state.items.filter((i) => i.id !== id);
   if (state.selectedId === id) state.selectedId = null;
   save(); renderRows(); drawOverlay();
@@ -675,6 +988,7 @@ async function aiDraft() {
     const block = data && Array.isArray(data.content) ? data.content.find((b) => b.type === "tool_use") : null;
     const out = block && block.input ? block.input : null;
     if (!out) throw new Error("no result");
+    pushHistory();
     const added = addAiItems(out, pageNum, rs, off.width, off.height);
     // use the scale Claude read only when the user has not set one
     let scaleMsg = "";
@@ -716,13 +1030,18 @@ function addAiItems(out, pageNum, rs, W, H) {
 
 /* ----------------------------------------------------------------- events */
 function wire() {
+  const overlay = $("overlay");
+  el("g", { id: "g-items" }, overlay);
+  el("g", { id: "g-live" }, overlay);
+  try { state.snapOn = localStorage.getItem("qtomate:snap") !== "0"; } catch (e) { /* ignore */ }
+
   // language
   const langSel = $("lang");
   for (const l of LANGS) { const o = document.createElement("option"); o.value = l; o.textContent = LANG_NAMES[l]; langSel.appendChild(o); }
   langSel.addEventListener("change", () => applyLang(langSel.value));
   $("unit-system").addEventListener("change", (e) => {
     state.unitSystem = e.target.value;
-    save(); buildPresets(); updateHint(); drawOverlay(); renderRows();
+    save(); buildPresets(); buildCalibUnits(); updateHint(); drawOverlay(); renderRows();
   });
 
   // files
@@ -749,6 +1068,7 @@ function wire() {
   $("calibrate-btn").addEventListener("click", () => { toggleScalePop(false); setTool("calibrate"); });
   $("calib-apply").addEventListener("click", applyCalibration);
   $("calib-value").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); applyCalibration(); } e.stopPropagation(); });
+  $("calib-unit").addEventListener("change", (e) => { try { localStorage.setItem("qtomate:calibunit:" + state.unitSystem, e.target.value); } catch (err) { /* ignore */ } });
   $("ai-btn").addEventListener("click", aiDraft);
   $("settings-btn").addEventListener("click", openSettings);
   $("ai-save").addEventListener("click", () => {
@@ -762,81 +1082,196 @@ function wire() {
     try { localStorage.removeItem("qtomate:apikey"); } catch (e) { /* ignore */ }
     $("ai-key").value = "";
   });
+  $("snap-btn").addEventListener("click", () => setSnap(!state.snapOn));
+  $("undo-btn").addEventListener("click", undo);
+  $("redo-btn").addEventListener("click", redo);
 
   // paging and zoom
   $("prev").addEventListener("click", () => goToPage(state.pageNum - 1));
   $("next").addEventListener("click", () => goToPage(state.pageNum + 1));
+  const pageInput = $("page-input");
+  pageInput.addEventListener("change", () => goToPage(Number(pageInput.value)));
+  pageInput.addEventListener("keydown", (e) => { if (e.key === "Enter") pageInput.blur(); e.stopPropagation(); });
+  pageInput.addEventListener("focus", () => pageInput.select());
   $("zoom-in").addEventListener("click", () => setZoom(state.zoom * 1.25));
   $("zoom-out").addEventListener("click", () => setZoom(state.zoom / 1.25));
   $("zoom-fit").addEventListener("click", () => renderPage(true));
-  $("scroller").addEventListener("wheel", (e) => {
-    if (!(e.ctrlKey || e.metaKey)) return;
+  const scroller = $("scroller");
+  scroller.addEventListener("wheel", (e) => {
+    // A mouse wheel zooms at the cursor, as in CAD and PDF takeoff tools. A touchpad
+    // (small, two-axis deltas) keeps scrolling the sheet; pinching zooms.
+    const pinch = e.ctrlKey || e.metaKey;
+    const wheel = e.deltaMode !== 0 || (e.deltaX === 0 && Math.abs(e.deltaY) >= 50);
+    if (!pinch && (!wheel || e.shiftKey)) return;
     e.preventDefault();
-    setZoom(state.zoom * (e.deltaY < 0 ? 1.15 : 1 / 1.15), { x: e.clientX, y: e.clientY });
+    const step = pinch && !wheel ? Math.exp(-e.deltaY * 0.01) : (e.deltaY < 0 ? 1.2 : 1 / 1.2);
+    setZoom(state.zoom * step, { x: e.clientX, y: e.clientY });
   }, { passive: false });
+  scroller.addEventListener("scroll", () => { if (state.pdf) scheduleDetail(160); }, { passive: true });
 
   // drawing
-  const overlay = $("overlay");
   let pan = null;
+  const startPan = (e) => {
+    pan = { x: e.clientX, y: e.clientY, left: scroller.scrollLeft, top: scroller.scrollTop };
+    scroller.classList.add("panning");
+    overlay.setPointerCapture(e.pointerId);
+  };
+  overlay.addEventListener("mousedown", (e) => { if (e.button === 1) e.preventDefault(); });
+  let lastDown = null;
   overlay.addEventListener("pointerdown", (e) => {
+    if (e.button === 1 || (e.button === 0 && spaceDown)) { e.preventDefault(); startPan(e); return; }
     if (e.button !== 0) return;
+    // Double-clicks are detected here: the overlay is redrawn between the two clicks,
+    // so the browser's own dblclick event is not reliable on it.
+    const now = performance.now();
+    const dbl = !!lastDown && now - lastDown.t < 400 && Math.hypot(e.clientX - lastDown.x, e.clientY - lastDown.y) < 5;
+    lastDown = dbl ? null : { t: now, x: e.clientX, y: e.clientY };
     if (state.tool === "select") {
       const g = e.target.closest ? e.target.closest("[data-id]") : null;
+      const h = e.target.closest ? e.target.closest("[data-i]") : null;
+      if (g && h && g.dataset.id === state.selectedId) {
+        if (dbl) { removeCorner(g.dataset.id, h); return; }
+        edit = { id: g.dataset.id, index: Number(h.dataset.i), insert: h.classList.contains("mid"), moved: false };
+        overlay.setPointerCapture(e.pointerId);
+        return;
+      }
       if (g) { selectItem(g.dataset.id, false); const row = document.querySelector(`.rowi[data-id="${g.dataset.id}"]`); if (row) row.scrollIntoView({ block: "nearest" }); return; }
-      const sc = $("scroller");
-      pan = { x: e.clientX, y: e.clientY, left: sc.scrollLeft, top: sc.scrollTop };
-      sc.classList.add("panning");
-      overlay.setPointerCapture(e.pointerId);
+      startPan(e);
       return;
     }
+    if (dbl && state.draft) { e.preventDefault(); finishDraft(); return; }
     addPoint(e);
   });
+  let moveFrame = 0, moveEvt = null;
   overlay.addEventListener("pointermove", (e) => {
     if (pan) {
-      const sc = $("scroller");
-      sc.scrollLeft = pan.left - (e.clientX - pan.x);
-      sc.scrollTop = pan.top - (e.clientY - pan.y);
+      scroller.scrollLeft = pan.left - (e.clientX - pan.x);
+      scroller.scrollTop = pan.top - (e.clientY - pan.y);
       return;
     }
-    const active = (state.draft && state.draft.points.length && state.draft.type !== "count") || (state.calibPts && state.calibPts.length === 1);
-    if (!active) return;
-    let p = toPt(e);
-    const last = state.draft ? state.draft.points[state.draft.points.length - 1] : state.calibPts[0];
-    if (e.shiftKey) p = ortho(p, last);
-    state.cursor = p;
-    drawOverlay();
+    overSheet = true;
+    moveEvt = { clientX: e.clientX, clientY: e.clientY, shiftKey: e.shiftKey, altKey: e.altKey };
+    if (moveFrame) return;
+    moveFrame = requestAnimationFrame(() => {
+      moveFrame = 0;
+      if (edit) dragCorner(moveEvt); else onMove(moveEvt);
+    });
   });
-  const endPan = (e) => {
-    if (!pan) return;
-    pan = null;
-    $("scroller").classList.remove("panning");
+  overlay.addEventListener("pointerenter", () => { overSheet = true; });
+  overlay.addEventListener("pointerleave", () => {
+    if (pan || edit) return;
+    overSheet = false;
+    if (state.snap || state.cursor) { state.snap = null; state.cursor = null; drawLive(); }
+    updateReadout();
+  });
+  const endPointer = (e) => {
+    if (pan) { pan = null; scroller.classList.remove("panning"); }
+    if (edit) {
+      const moved = edit.moved;
+      edit = null; state.snap = null;
+      if (moved) { save(); renderRows(); }
+      drawOverlay();
+    }
     try { overlay.releasePointerCapture(e.pointerId); } catch (err) { /* ignore */ }
   };
-  overlay.addEventListener("pointerup", endPan);
-  overlay.addEventListener("pointercancel", endPan);
+  overlay.addEventListener("pointerup", endPointer);
+  overlay.addEventListener("pointercancel", endPointer);
   overlay.addEventListener("dblclick", (e) => { if (state.draft) { e.preventDefault(); finishDraft(); } });
   $("finish-draft").addEventListener("click", finishDraft);
   $("cancel-draft").addEventListener("click", cancelDraft);
   $("undo-point").addEventListener("click", undoPoint);
 
+  const TOOL_KEYS = { KeyV: "select", KeyL: "length", KeyA: "area", KeyC: "count" };
   document.addEventListener("keydown", (e) => {
     const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName);
     if ($("settings").open) return;
+    if (e.key === "Shift" || e.key === "Alt") { if (lastPtr && overSheet) onMove({ clientX: lastPtr.clientX, clientY: lastPtr.clientY, shiftKey: e.shiftKey, altKey: e.altKey }); if (e.key === "Alt" && overSheet) e.preventDefault(); return; }
     if (e.key === "Escape") { if (!$("scale-pop").hidden) toggleScalePop(false); else if (state.draft || state.calibPts) cancelDraft(); else if (state.tool !== "select") setTool("select"); return; }
-    if (typing) return;
+    if (typing || !state.pdf) return;
+    if (e.ctrlKey || e.metaKey) {
+      if (e.code === "KeyZ") { e.preventDefault(); if (e.shiftKey) redo(); else undo(); }
+      else if (e.code === "KeyY") { e.preventDefault(); redo(); }
+      return;
+    }
+    if (e.altKey) return;
+    if (e.code === "Space" && overSheet) { e.preventDefault(); spaceDown = true; $("stage").classList.add("space"); return; }
     if (e.key === "Enter" && state.draft) { e.preventDefault(); finishDraft(); return; }
     if (e.key === "Backspace" || e.key === "Delete") {
       if (state.draft) { e.preventDefault(); undoPoint(); }
       else if (state.selectedId) { e.preventDefault(); removeItem(state.selectedId); }
+      return;
     }
+    if (TOOL_KEYS[e.code]) { toggleScalePop(false); setTool(TOOL_KEYS[e.code]); if (lastPtr && overSheet) onMove(lastPtr); return; }
+    if (e.code === "KeyS") { setSnap(!state.snapOn); return; }
+    if (e.key === "+" || e.key === "=") { setZoom(state.zoom * 1.25); return; }
+    if (e.key === "-") { setZoom(state.zoom / 1.25); return; }
+    if (e.key === "0") { renderPage(true); return; }
+    if (e.key === "PageDown") { e.preventDefault(); goToPage(state.pageNum + 1); return; }
+    if (e.key === "PageUp") { e.preventDefault(); goToPage(state.pageNum - 1); }
   });
+  document.addEventListener("keyup", (e) => {
+    if (e.code === "Space" && spaceDown) { spaceDown = false; $("stage").classList.remove("space"); e.preventDefault(); return; }
+    if ((e.key === "Shift" || e.key === "Alt") && lastPtr && overSheet) onMove({ clientX: lastPtr.clientX, clientY: lastPtr.clientY, shiftKey: e.shiftKey, altKey: e.altKey });
+  });
+  window.addEventListener("blur", () => { spaceDown = false; $("stage").classList.remove("space"); });
 
   // export
   $("export-xlsx").addEventListener("click", exportXlsx);
   $("export-csv").addEventListener("click", exportCsv);
 
   let resizeTimer = 0;
-  window.addEventListener("resize", () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(() => { if (state.pdf) drawOverlay(); }, 150); });
+  window.addEventListener("resize", () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(() => { if (state.pdf) { drawOverlay(); scheduleDetail(0); } }, 150); });
+  updateSnapButton();
+}
+
+/** Double-click on a corner of the selected measurement removes that corner. */
+function removeCorner(id, handle) {
+  if (handle.classList.contains("mid")) return;
+  const item = state.items.find((i) => i.id === id);
+  const min = item ? { length: 2, area: 3, count: 1 }[item.type] : 0;
+  if (!item || item.points.length <= min) return;
+  pushHistory();
+  item.points.splice(Number(handle.dataset.i), 1);
+  save(); renderRows(); drawOverlay();
+}
+
+/** Moves the corner being dragged; the first movement records an undo step. */
+function dragCorner(src) {
+  if (!edit) return;
+  const item = state.items.find((i) => i.id === edit.id);
+  if (!item) { edit = null; return; }
+  lastPtr = { clientX: src.clientX, clientY: src.clientY, shiftKey: !!src.shiftKey, altKey: !!src.altKey };
+  const at = item.type === "count" ? Object.assign({}, lastPtr, { altKey: true }) : lastPtr; // count marks do not snap
+  const r = resolvePoint(at, null, edit.insert ? null : { id: item.id, index: edit.index });
+  if (!edit.moved) {
+    pushHistory();
+    if (edit.insert) { item.points.splice(edit.index, 0, r.p); edit.insert = false; }
+    edit.moved = true;
+  }
+  item.points[edit.index] = r.p;
+  state.snap = item.type === "count" ? null : r.snap;
+  drawOverlay();
+  const cell = document.querySelector(`.rowi[data-id="${item.id}"] .qty`);
+  const q = qtyText(item);
+  if (cell && q) cell.textContent = q;
+}
+
+const CALIB_UNITS = {
+  metric: [["mm", 0.001, "unit_mm"], ["cm", 0.01, "unit_cm"], ["m", 1, "unit_m"]],
+  imperial: [["ft", 1 / FT_PER_M, "unit_ft"], ["in", 1 / FT_PER_M / 12, "unit_in"]],
+};
+function buildCalibUnits() {
+  const sel = $("calib-unit");
+  if (!sel) return;
+  let saved = null;
+  try { saved = localStorage.getItem("qtomate:calibunit:" + state.unitSystem); } catch (e) { /* ignore */ }
+  sel.textContent = "";
+  for (const [id, , key] of CALIB_UNITS[state.unitSystem]) {
+    const o = document.createElement("option");
+    o.value = id; o.textContent = t(key);
+    sel.appendChild(o);
+  }
+  if (saved && CALIB_UNITS[state.unitSystem].some((u) => u[0] === saved)) sel.value = saved;
 }
 
 function applyCalibration() {
@@ -844,13 +1279,16 @@ function applyCalibration() {
   if (!(v > 0) || !state.calibPts || state.calibPts.length < 2) return;
   const d = dist(state.calibPts[0], state.calibPts[1]);
   if (d < 1e-6) return;
-  const metres = state.unitSystem === "imperial" ? v / FT_PER_M : v;
-  const mpp = metres / d;
-  applyScale({ mpp, label: `${t("scale_calibrated")} ≈ 1:${Math.round(mpp / M_PER_PT)}` });
+  const unit = CALIB_UNITS[state.unitSystem].find((u) => u[0] === $("calib-unit").value) || CALIB_UNITS[state.unitSystem][0];
+  const mpp = (v * unit[1]) / d;
+  const ratio = mpp / M_PER_PT;
+  applyScale({ mpp, label: `${t("scale_calibrated")} ≈ 1:${ratio >= 10 ? Math.round(ratio) : ratio.toFixed(1)}` });
   setTool("select");
+  // drawings are rarely outside this range: most likely the distance was typed in another unit
+  if (ratio > 5000 || ratio < 1) toast(t("calib_warn", { r: Math.round(ratio), u: t(unit[2]) }), true);
 }
 
 wire();
 applyLang(pickLang());
 // expose a small handle for automated checks
-window.__qtomate = { state, measure, openSample };
+window.__qtomate = { state, measure, openSample, findSnap };
