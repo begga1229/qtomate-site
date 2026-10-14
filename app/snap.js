@@ -8,6 +8,7 @@
 const CELL = 48; // grid cell size in points
 const MAX_SEGMENTS = 1500000;
 const CURVE_STEPS = 8;
+const SHORT = 6; // points (about 2 mm on paper): strokes shorter than this are ticks and arrow parts
 
 const mul = (m, n) => [
   m[0] * n[0] + m[2] * n[1], m[1] * n[0] + m[3] * n[1],
@@ -174,7 +175,19 @@ export class SnapIndex {
     const r0 = Math.max(0, Math.floor((y - r) / CELL) - 1), r1 = Math.min(rows - 1, Math.floor((y + r) / CELL) + 1);
     const tick = ++this.tick;
     const tp2 = tolPoint * tolPoint, tl2 = tolLine * tolLine, r2 = r * r;
-    let bestEnd = Infinity, ex = 0, ey = 0;
+    // Line ends near the cursor, merged by position. CAD exports often draw one point
+    // as several short strokes (dimension ticks, arrows) or draw a line twice, so an end
+    // is judged by how many different lines meet there and how long they are.
+    const ends = new Map();
+    const addEnd = (x0, y0, ox, oy, len) => {
+      const d = (x0 - x) * (x0 - x) + (y0 - y) * (y0 - y);
+      if (d > tp2) return;
+      const key = Math.round(x0 * 8) + "," + Math.round(y0 * 8);
+      let e = ends.get(key);
+      if (!e) { e = { x: x0, y: y0, d, others: new Set(), long: false }; ends.set(key, e); }
+      e.others.add(Math.round(ox * 8) + "," + Math.round(oy * 8));
+      if (len >= SHORT) e.long = true;
+    };
     let bestMid = Infinity, mx = 0, my = 0;
     let bestLine = Infinity, lx = 0, ly = 0;
     const near = []; // [d2, segment]
@@ -188,10 +201,10 @@ export class SnapIndex {
           const o = s * 4;
           const x1 = xy[o], y1 = xy[o + 1], x2 = xy[o + 2], y2 = xy[o + 3];
           const f = flags[s];
+          const dx = x2 - x1, dy = y2 - y1, l2 = dx * dx + dy * dy, len = Math.sqrt(l2);
+          if (f & F_START) addEnd(x1, y1, x2, y2, len);
+          if (f & F_END) addEnd(x2, y2, x1, y1, len);
           let d;
-          if (f & F_START) { d = (x1 - x) * (x1 - x) + (y1 - y) * (y1 - y); if (d < bestEnd) { bestEnd = d; ex = x1; ey = y1; } }
-          if (f & F_END) { d = (x2 - x) * (x2 - x) + (y2 - y) * (y2 - y); if (d < bestEnd) { bestEnd = d; ex = x2; ey = y2; } }
-          const dx = x2 - x1, dy = y2 - y1, l2 = dx * dx + dy * dy;
           if ((f & F_MID) && l2 > 16 * tp2) {
             const hx = (x1 + x2) / 2, hy = (y1 + y2) / 2;
             d = (hx - x) * (hx - x) + (hy - y) * (hy - y);
@@ -227,12 +240,17 @@ export class SnapIndex {
         }
       }
     }
-    // a point snap wins over "on a line"; among point snaps the nearest wins,
-    // with a small preference for ends and crossings over midpoints
-    let kind = null, bx = 0, by = 0, bd = Infinity;
-    if (bestEnd <= tp2) { kind = "end"; bx = ex; by = ey; bd = bestEnd; }
-    if (bestInt <= tp2 && bestInt < bd * 0.98) { kind = "int"; bx = ix; by = iy; bd = bestInt; }
-    if (bestMid <= tp2 && bestMid * 1.6 < bd) { kind = "mid"; bx = mx; by = my; bd = bestMid; }
+    // Each candidate is scored by its distance divided by a weight: points where lines
+    // meet or cross count most, the loose end of a tiny stroke counts least.
+    let kind = null, bx = 0, by = 0, bd = Infinity, score = Infinity;
+    const offer = (k, px, py, d2, w) => {
+      if (d2 > tp2) return;
+      const sc = Math.sqrt(d2) / w;
+      if (sc < score) { score = sc; kind = k; bx = px; by = py; bd = d2; }
+    };
+    for (const e of ends.values()) offer("end", e.x, e.y, e.d, e.others.size >= 2 ? 1.6 : e.long ? 1 : 0.3);
+    offer("int", ix, iy, bestInt, 1.5);
+    offer("mid", mx, my, bestMid, 0.7);
     if (!kind && bestLine <= tl2) { kind = "line"; bx = lx; by = ly; bd = bestLine; }
     return kind ? { x: bx, y: by, kind, d: Math.sqrt(bd) } : null;
   }

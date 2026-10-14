@@ -2,8 +2,8 @@
 // Everything runs in the browser. The PDF is never uploaded; only "AI draft"
 // sends an image of the current page to the Anthropic API with the user's own key.
 import * as pdfjsLib from "./vendor/pdf.min.mjs";
-import { LANGS, LANG_NAMES, makeT } from "./i18n.js?v=20261009b";
-import { SnapIndex, buildSnapIndex } from "./snap.js?v=20261009b";
+import { LANGS, LANG_NAMES, makeT } from "./i18n.js?v=20261014a";
+import { SnapIndex, buildSnapIndex } from "./snap.js?v=20261014a";
 
 const VENDOR = new URL("./vendor/", import.meta.url).href;
 pdfjsLib.GlobalWorkerOptions.workerSrc = VENDOR + "pdf.worker.min.mjs";
@@ -436,6 +436,8 @@ async function goToPage(n) {
   if (n === state.pageNum) { updatePageLabel(); return; }
   cancelDraft();
   state.pageNum = n;
+  state.snapIndex = null; state.snap = null; // the old page's geometry must not be used on the new page
+  updateSnapButton();
   await renderPage(true);
   $("scroller").scrollTo(0, 0);
 }
@@ -1123,9 +1125,11 @@ function wire() {
     if (e.button !== 0) return;
     // Double-clicks are detected here: the overlay is redrawn between the two clicks,
     // so the browser's own dblclick event is not reliable on it.
-    const now = performance.now();
-    const dbl = !!lastDown && now - lastDown.t < 400 && Math.hypot(e.clientX - lastDown.x, e.clientY - lastDown.y) < 5;
-    lastDown = dbl ? null : { t: now, x: e.clientX, y: e.clientY };
+    // Compared on the sheet, not the screen, so that two clicks on different parts of a
+    // sheet that was scrolled in between are never taken for a double-click.
+    const now = performance.now(), at = toPt(e);
+    const dbl = !!lastDown && now - lastDown.t < 400 && dist(at, lastDown.p) * state.zoom < 5;
+    lastDown = dbl ? null : { t: now, p: at };
     if (state.tool === "select") {
       const g = e.target.closest ? e.target.closest("[data-id]") : null;
       const h = e.target.closest ? e.target.closest("[data-i]") : null;
