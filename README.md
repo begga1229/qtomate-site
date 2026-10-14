@@ -2,20 +2,32 @@
 
 Static site served by GitHub Pages at https://qtomate.dpdns.org/ in English, Russian, Uzbek and Turkish.
 
-## Editing the text
+## Pages
 
-All copy lives in `_build/strings.py`, one entry per string with the four languages side by side.
-The page layout lives in `_build/template.html`.
+Every page exists in English (at the root) and under `ru/`, `uz/` and `tr/`:
 
-After changing either file, rebuild and commit:
+| Page | Path | Text in |
+|---|---|---|
+| Home | `/` | `_build/strings.py`, layout in `_build/template.html` |
+| Features | `/features/` | `_build/p_features.py` |
+| Who it's for | `/use-cases/` | `_build/p_usecases.py` |
+| Pricing and pilot | `/pricing/` | `_build/p_pricing.py` |
+| Privacy | `/privacy/` | `_build/p_pricing.py` |
+| Glossary and 12 term pages | `/glossary/`, `/glossary/<term>/` | `_build/p_glossary.py` |
+
+Navigation, footer and other shared text are in `_build/ui.py`. Every string is a tuple of four: English, Russian, Uzbek, Turkish.
+
+## Building
+
+After changing any file in `_build/`, rebuild and commit:
 
     python3 _build/build.py
 
-This regenerates `index.html`, `ru/`, `uz/`, `tr/`, `sitemap.xml` and `robots.txt`. Do not edit those by hand.
+This regenerates every `index.html`, `assets/site.css` (from the `<style>` block of `template.html` plus `_build/site_extra.css`), `assets/site.js`, `404.html`, `sitemap.xml` and `robots.txt`. Do not edit those by hand. When the CSS changes, bump `VERSION` in `build.py` so browsers fetch the new file.
 
 ## Fonts
 
-Geologica and JetBrains Mono are self-hosted from `fonts/` under the SIL Open Font License (licence texts are in the same folder).
+Unbounded and Onest are self-hosted from `fonts/` under the SIL Open Font License (licence texts are in the same folder).
 
 ## The takeoff workspace (`app/`)
 
