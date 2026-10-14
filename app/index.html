@@ -7,7 +7,7 @@
 <title>QtoMate | Takeoff workspace</title>
 <meta name="description" content="Open a PDF drawing in your browser, set the scale, measure lengths, areas and counts, approve each line and export the bill of quantities.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23080d1a'/%3E%3Crect x='7' y='7' width='18' height='18' rx='3' fill='none' stroke='%233de3ff' stroke-width='2.4'/%3E%3Crect x='16' y='16' width='9' height='9' rx='1.5' fill='%23b6ff5c'/%3E%3C/svg%3E">
-<link rel="stylesheet" href="app.css?v=20261014a">
+<link rel="stylesheet" href="app.css?v=20261014b">
 </head>
 <body>
 
@@ -73,6 +73,10 @@
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 15h18v5H3zM7 15v2.5M11 15v3.5M15 15v2.5M19 15v3.5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M3 9h18M3 7v4M21 7v4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
         <span data-i18n="tool_scale"></span>
       </button>
+      <button class="tool" type="button" id="layers-btn" aria-expanded="false" aria-controls="layers-pop" data-i18n-title="layers_title" data-key="K">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l9 5-9 5-9-5zM3 12.5l9 5 9-5M3 16.5l9 5 9-5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
+        <span data-i18n="tool_layers"></span>
+      </button>
       <button class="tool ai" type="button" id="ai-btn">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8zM19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z" fill="currentColor"/></svg>
         <span data-i18n="tool_ai"></span>
@@ -90,6 +94,25 @@
       </div>
       <label class="check"><input type="checkbox" id="scale-all" checked> <span data-i18n="scale_all"></span></label>
       <button class="btn ghost small" id="calibrate-btn" type="button" data-i18n="scale_calibrate"></button>
+    </div>
+
+    <div class="scale-pop layers-pop" id="layers-pop" hidden>
+      <h2 data-i18n="tool_layers"></h2>
+      <p data-i18n="layers_p"></p>
+      <div id="layers-controls">
+        <input id="layers-search" type="search" autocomplete="off" spellcheck="false" data-i18n-ph="layers_search" data-i18n-aria="layers_search">
+        <div class="seg-tabs" role="group">
+          <button type="button" id="layers-page" aria-pressed="true" data-i18n="layers_page"></button>
+          <button type="button" id="layers-all" aria-pressed="false" data-i18n="layers_all"></button>
+        </div>
+        <div class="row-inline layers-actions">
+          <button class="btn ghost small" id="layers-show-all" type="button" data-i18n="layers_show_all"></button>
+          <button class="btn ghost small" id="layers-hide-all" type="button" data-i18n="layers_hide_all"></button>
+          <span id="layers-count"></span>
+        </div>
+      </div>
+      <ul class="layers-list" id="layers-list"></ul>
+      <p class="layers-empty" id="layers-empty" hidden></p>
     </div>
 
     <div class="viewer">
@@ -146,6 +169,11 @@
       </div>
       <p class="boq-empty" id="boq-empty" data-i18n="boq_empty"></p>
       <ol class="rows" id="rows"></ol>
+      <datalist id="group-list"></datalist>
+      <div class="totals" id="totals" hidden>
+        <span data-i18n="total"></span>
+        <strong id="totals-v"></strong>
+      </div>
       <div class="boq-foot">
         <button class="btn primary" id="export-xlsx" type="button" data-i18n="export_xlsx"></button>
         <button class="btn ghost" id="export-csv" type="button" data-i18n="export_csv"></button>
@@ -175,6 +203,6 @@
   </form>
 </dialog>
 
-<script type="module" src="app.js?v=20261014a"></script>
+<script type="module" src="app.js?v=20261014b"></script>
 </body>
 </html>

@@ -41,7 +41,15 @@ class SegmentStore {
 }
 
 /** Walks the page's drawing operators and collects every painted line. */
-function collect(opList, OPS, base, w, h) {
+/** Ids of the optional content (layers) a marked-content property refers to. */
+function ocIds(props) {
+  if (!props) return [];
+  if (props.type === "OCG" && props.id) return [props.id];
+  if (props.type === "OCMD") return Array.isArray(props.ids) ? props.ids.filter((x) => typeof x === "string") : [];
+  return [];
+}
+
+function collect(opList, OPS, base, w, h, ocConfig) {
   const store = new SegmentStore();
   let ctm = base;
   const stack = [];
@@ -49,6 +57,11 @@ function collect(opList, OPS, base, w, h) {
   const closing = new Set([OPS.closeStroke, OPS.closeFillStroke, OPS.closeEOFillStroke]);
   const inside = (x, y) => x > -4 && y > -4 && x < w + 4 && y < h + 4;
   let full = false;
+  // Optional content (layers): lines inside a hidden layer are not drawn, so they
+  // must not be snapped to either. Also note which layers the page uses.
+  const marked = []; // visibility of each open marked-content section
+  let hiddenDepth = 0;
+  const layers = new Set();
 
   const line = (x1, y1, x2, y2, flags) => {
     if (!inside(x1, y1) && !inside(x2, y2)) return;
@@ -67,7 +80,20 @@ function collect(opList, OPS, base, w, h) {
       if (m && m.length === 6) ctm = mul(ctm, m);
       continue;
     }
-    if (op !== OPS.constructPath) continue;
+    if (op === OPS.beginMarkedContentProps) {
+      const a = args[i] || [];
+      let visible = true;
+      if (a[0] === "OC") {
+        for (const id of ocIds(a[1])) layers.add(id);
+        if (ocConfig) { try { visible = ocConfig.isVisible(a[1]); } catch (e) { visible = true; } }
+      }
+      marked.push(visible);
+      if (!visible) hiddenDepth++;
+      continue;
+    }
+    if (op === OPS.beginMarkedContent) { marked.push(true); continue; }
+    if (op === OPS.endMarkedContent) { if (marked.length && !marked.pop()) hiddenDepth--; continue; }
+    if (op !== OPS.constructPath || hiddenDepth > 0) continue;
     const a = args[i];
     const paint = a[0];
     if (paint === OPS.endPath) continue; // not painted: used only for clipping
@@ -116,11 +142,12 @@ function collect(opList, OPS, base, w, h) {
     }
     if (closing.has(paint)) close();
   }
-  return { store, truncated: full };
+  return { store, truncated: full, layers };
 }
 
 export class SnapIndex {
-  constructor(store, w, h, truncated) {
+  constructor(store, w, h, truncated, layers) {
+    this.layers = layers || new Set(); // ids of the layers drawn on this page
     this.count = store.n;
     this.xy = store.xy;
     this.flags = store.flags;
@@ -257,9 +284,9 @@ export class SnapIndex {
 }
 
 /** Builds the index for one page. `pdfjs` is the PDF.js module (for its OPS table). */
-export async function buildSnapIndex(page, pdfjs) {
+export async function buildSnapIndex(page, pdfjs, ocConfig) {
   const vp = page.getViewport({ scale: 1 });
   const opList = await page.getOperatorList();
-  const { store, truncated } = collect(opList, pdfjs.OPS, vp.transform, vp.width, vp.height);
-  return new SnapIndex(store, vp.width, vp.height, truncated);
+  const { store, truncated, layers } = collect(opList, pdfjs.OPS, vp.transform, vp.width, vp.height, ocConfig);
+  return new SnapIndex(store, vp.width, vp.height, truncated, layers);
 }

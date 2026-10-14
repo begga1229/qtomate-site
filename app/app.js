@@ -2,8 +2,8 @@
 // Everything runs in the browser. The PDF is never uploaded; only "AI draft"
 // sends an image of the current page to the Anthropic API with the user's own key.
 import * as pdfjsLib from "./vendor/pdf.min.mjs";
-import { LANGS, LANG_NAMES, makeT } from "./i18n.js?v=20261014a";
-import { SnapIndex, buildSnapIndex } from "./snap.js?v=20261014a";
+import { LANGS, LANG_NAMES, makeT } from "./i18n.js?v=20261014b";
+import { SnapIndex, buildSnapIndex } from "./snap.js?v=20261014b";
 
 const VENDOR = new URL("./vendor/", import.meta.url).href;
 pdfjsLib.GlobalWorkerOptions.workerSrc = VENDOR + "pdf.worker.min.mjs";
@@ -36,6 +36,9 @@ const state = {
   snapOn: true,
   snap: null, // { x, y, kind } under the cursor
   snapIndex: null, // geometry of the current page, once it has been read
+  ocConfig: null, // the PDF's layers (optional content), if it has any
+  hiddenLayers: [], // ids of the layers the user switched off
+  collapsed: [], // groups folded in the bill of quantities
 };
 let t = makeT("en");
 let renderSeq = 0;
@@ -51,6 +54,9 @@ let lastPtr = null; // last pointer position over the sheet
 let overSheet = false;
 let spaceDown = false;
 let edit = null; // corner being dragged: { id, index, insert, moved }
+let layerStamp = 0; // changes whenever a layer is switched on or off
+let layersScope = "page";
+const ocPromise = () => (state.ocConfig ? Promise.resolve(state.ocConfig) : null);
 
 /* ------------------------------------------------------------------ i18n */
 function pickLang() {
@@ -71,12 +77,13 @@ function applyLang(lang) {
   document.querySelectorAll("[data-i18n]").forEach((el) => { el.textContent = t(el.dataset.i18n); });
   document.querySelectorAll("[data-i18n-title]").forEach((el) => { el.title = t(el.dataset.i18nTitle) + (el.dataset.key ? ` (${el.dataset.key})` : ""); });
   document.querySelectorAll("[data-i18n-aria]").forEach((el) => { el.setAttribute("aria-label", t(el.dataset.i18nAria)); });
+  document.querySelectorAll("[data-i18n-ph]").forEach((el) => { el.placeholder = t(el.dataset.i18nPh); });
   $("home-link").href = lang === "en" ? "../" : `../${lang}/`;
   $("lang").value = lang;
   buildPresets();
   buildCalibUnits();
   updateHint();
-  if (state.pdf) { updatePageLabel(); updateScaleChip(); drawOverlay(); renderRows(); }
+  if (state.pdf) { updatePageLabel(); updateScaleChip(); drawOverlay(); renderRows(); renderLayers(); }
 }
 
 /* ------------------------------------------------------------ quantities */
@@ -97,19 +104,38 @@ function polyArea(pts) {
   return Math.abs(s) / 2;
 }
 
-/** Returns { ok, value, unit } for an item in the current unit system. */
+const sign = (item) => (item.type === "area" && item.deduct ? -1 : 1);
+
+/** Returns { ok, value, unit } for an item in the current unit system. Deducted areas are negative. */
 function measure(item) {
-  if (item.type === "count") return { ok: true, value: item.points.length, unit: t("unit_no"), decimals: 0 };
+  if (item.type === "count") return { ok: true, value: item.points.length, unit: t("unit_no"), decimals: 0, key: "no" };
   const sc = pageScale(item.page);
   if (!sc) return { ok: false };
   const imperial = state.unitSystem === "imperial";
   if (item.type === "length") {
     const m = polyLength(item.points) * sc.mpp;
-    return { ok: true, value: imperial ? m * FT_PER_M : m, unit: t(imperial ? "unit_ft" : "unit_m"), decimals: 2 };
+    return { ok: true, value: imperial ? m * FT_PER_M : m, unit: t(imperial ? "unit_ft" : "unit_m"), decimals: 2, key: "len" };
   }
-  const m2 = polyArea(item.points) * sc.mpp * sc.mpp;
-  return { ok: true, value: imperial ? m2 * FT_PER_M * FT_PER_M : m2, unit: t(imperial ? "unit_ft2" : "unit_m2"), decimals: 2 };
+  const m2 = sign(item) * polyArea(item.points) * sc.mpp * sc.mpp;
+  return { ok: true, value: imperial ? m2 * FT_PER_M * FT_PER_M : m2, unit: t(imperial ? "unit_ft2" : "unit_m2"), decimals: 2, key: "area" };
 }
+/** The second quantity a height or depth gives: wall area from a run, volume from an area. */
+function measure2(item) {
+  const h = Number(item.height);
+  if (!(h > 0) || item.type === "count") return { ok: false };
+  const sc = pageScale(item.page);
+  if (!sc) return { ok: false };
+  const imperial = state.unitSystem === "imperial";
+  if (item.type === "length") {
+    const m2 = polyLength(item.points) * sc.mpp * h;
+    return { ok: true, value: imperial ? m2 * FT_PER_M * FT_PER_M : m2, unit: t(imperial ? "unit_ft2" : "unit_m2"), decimals: 2, key: "area" };
+  }
+  const m3 = sign(item) * polyArea(item.points) * sc.mpp * sc.mpp * h;
+  return { ok: true, value: imperial ? m3 * FT_PER_M ** 3 : m3, unit: t(imperial ? "unit_ft3" : "unit_m3"), decimals: 2, key: "vol" };
+}
+/** A height in metres shown in the current units, and back. */
+const toShownLen = (m) => (state.unitSystem === "imperial" ? m * FT_PER_M : m);
+const fromShownLen = (v) => (state.unitSystem === "imperial" ? v / FT_PER_M : v);
 function fmt(value, decimals) {
   try {
     return new Intl.NumberFormat(state.lang, { minimumFractionDigits: decimals, maximumFractionDigits: decimals }).format(value);
@@ -121,6 +147,18 @@ function qtyText(item) {
   const q = measure(item);
   return q.ok ? `${fmt(q.value, q.decimals)} ${q.unit}` : null;
 }
+function qty2Text(item) {
+  const q = measure2(item);
+  return q.ok ? `${fmt(q.value, q.decimals)} ${q.unit}` : null;
+}
+/** Adds quantities into a Map keyed by unit, for subtotals. */
+function addTotals(map, q) {
+  if (!q.ok) return;
+  const cur = map.get(q.unit) || { value: 0, decimals: q.decimals };
+  cur.value += q.value;
+  map.set(q.unit, cur);
+}
+const totalsText = (map) => [...map].map(([unit, v]) => `${fmt(v.value, v.decimals)} ${unit}`).join(" · ");
 /** Length in page points as text in the current units, or null when the page has no scale. */
 function lenText(pt, pageNum) {
   const sc = pageScale(pageNum || state.pageNum);
@@ -144,6 +182,7 @@ function save() {
     localStorage.setItem(state.fileKey, JSON.stringify({
       items: state.items, scales: state.scales, scaleAll: state.scaleAll,
       unitSystem: state.unitSystem, counters: state.counters,
+      hiddenLayers: state.hiddenLayers, collapsed: state.collapsed,
     }));
   } catch (e) { /* storage full or unavailable: the session still works */ }
 }
@@ -157,6 +196,8 @@ function restore() {
     state.scaleAll = d.scaleAll || null;
     state.unitSystem = d.unitSystem === "imperial" ? "imperial" : "metric";
     state.counters = Object.assign({ length: 0, area: 0, count: 0 }, d.counters);
+    state.hiddenLayers = Array.isArray(d.hiddenLayers) ? d.hiddenLayers.filter((x) => typeof x === "string") : [];
+    state.collapsed = Array.isArray(d.collapsed) ? d.collapsed.filter((x) => typeof x === "string") : [];
     return state.items.length;
   } catch (e) { return 0; }
 }
@@ -232,7 +273,13 @@ async function openPdf(buffer, name, size) {
   snapCache.clear(); snapNoticeShown = false;
   hist.undo.length = 0; hist.redo.length = 0;
   baseKey = ""; curPage = null;
+  state.hiddenLayers = []; state.collapsed = [];
+  state.ocConfig = null;
+  try { state.ocConfig = await state.pdf.getOptionalContentConfig(); } catch (e) { /* no layers */ }
+  if (state.ocConfig && ![...state.ocConfig].length) state.ocConfig = null;
   const restored = restore();
+  applyHiddenLayers();
+  closePops();
   $("unit-system").value = state.unitSystem;
   $("file-name").textContent = name;
   $("empty").hidden = true;
@@ -242,6 +289,7 @@ async function openPdf(buffer, name, size) {
   buildPresets();
   await renderPage(true);
   renderRows();
+  renderLayers();
   updateHistoryButtons();
   if (restored) toast(t("restored", { n: restored }));
 }
@@ -299,7 +347,7 @@ async function renderPage(fit) {
   // on screen is drawn at full sharpness (see renderDetail).
   const need = state.zoom * pixelRatio();
   const rs = Math.min(need, Math.sqrt(MAX_BASE_PIXELS / (vp1.width * vp1.height)));
-  const key = `${state.fileKey}|${pageNum}|${rs.toFixed(4)}`;
+  const key = `${state.fileKey}|${pageNum}|${rs.toFixed(4)}|${layerStamp}`;
   if (key !== baseKey) {
     if (baseTask) { try { baseTask.cancel(); } catch (e) { /* ignore */ } }
     const old = $("canvas");
@@ -308,7 +356,7 @@ async function renderPage(fit) {
     const vp = page.getViewport({ scale: rs });
     const c = document.createElement("canvas");
     c.width = Math.max(1, Math.floor(vp.width)); c.height = Math.max(1, Math.floor(vp.height));
-    const task = baseTask = page.render({ canvas: c, canvasContext: c.getContext("2d"), viewport: vp });
+    const task = baseTask = page.render({ canvas: c, canvasContext: c.getContext("2d"), viewport: vp, optionalContentConfigPromise: ocPromise() });
     try { await task.promise; } catch (e) {
       if (e && e.name !== "RenderingCancelledException") console.error(e);
       return;
@@ -349,6 +397,7 @@ async function renderDetail() {
   const task = detailTask = page.render({
     canvas: c, canvasContext: c.getContext("2d"),
     viewport: page.getViewport({ scale: need }),
+    optionalContentConfigPromise: ocPromise(),
     transform: [1, 0, 0, 1, -x0 * dpr, -y0 * dpr],
   });
   try { await task.promise; } catch (e) {
@@ -365,21 +414,22 @@ async function renderDetail() {
 
 /* -------------------------------------------------------------- snapping */
 function useSnapIndex() {
-  const n = state.pageNum, pdf = state.pdf;
+  const n = state.pageNum, pdf = state.pdf, stamp = layerStamp;
   const hit = snapCache.get(n);
   state.snapIndex = hit instanceof SnapIndex ? hit : null;
   updateSnapButton();
   if (hit) return;
-  const job = pdf.getPage(n).then((page) => buildSnapIndex(page, pdfjsLib)).then((index) => {
-    if (state.pdf !== pdf) return;
+  const job = pdf.getPage(n).then((page) => buildSnapIndex(page, pdfjsLib, state.ocConfig)).then((index) => {
+    if (state.pdf !== pdf || stamp !== layerStamp) return; // the file or the layers changed meanwhile
     snapCache.set(n, index);
     for (const k of snapCache.keys()) { if (snapCache.size <= 6) break; if (k !== state.pageNum) snapCache.delete(k); }
     if (state.pageNum !== n) return;
     state.snapIndex = index;
     updateSnapButton();
+    if (!$("layers-pop").hidden && layersScope === "page") renderLayers();
     if (!index.count && state.snapOn && !snapNoticeShown) { snapNoticeShown = true; toast(t("snap_none")); }
     if (lastPtr && overSheet) onMove(lastPtr);
-  }).catch((e) => { console.error(e); if (state.pdf === pdf) snapCache.delete(n); });
+  }).catch((e) => { console.error(e); if (state.pdf === pdf && stamp === layerStamp) snapCache.delete(n); });
   snapCache.set(n, job);
 }
 function updateSnapButton() {
@@ -505,13 +555,23 @@ function drawOverlay() {
 function drawItems() {
   const svg = layer("g-items");
   const z = state.zoom;
+  // keep the hatch of deducted areas the same size on screen at any zoom
+  const pat = $("hatch");
+  if (pat) {
+    pat.setAttribute("width", 8 / z); pat.setAttribute("height", 8 / z);
+    pat.firstChild.setAttribute("width", 8 / z); pat.firstChild.setAttribute("height", 8 / z);
+    pat.lastChild.setAttribute("y2", 8 / z); pat.lastChild.setAttribute("stroke-width", 2.2 / z);
+  }
   // the selected measurement is drawn last so that it, and its corners, stay on top
   const onPage = state.items.filter((i) => i.page === state.pageNum);
   onPage.sort((a, b) => (a.id === state.selectedId) - (b.id === state.selectedId));
+  const colours = groupColours();
   for (const item of onPage) {
     const selected = item.id === state.selectedId;
-    const cls = ["item", item.origin === "ai" ? "ai" : "", item.status === "approved" ? "approved" : "", selected ? "selected" : ""].join(" ");
+    const cls = ["item", item.origin === "ai" ? "ai" : "", item.status === "approved" ? "approved" : "", selected ? "selected" : "", item.type === "area" && item.deduct ? "deduct" : ""].join(" ");
     const g = el("g", { class: cls, "data-id": item.id }, svg);
+    const colour = colours.get(groupOf(item));
+    if (colour) g.style.setProperty("--c", colour);
     if (item.type === "length") {
       el("polyline", { class: "shape length", points: ptsAttr(item.points) }, g);
       el("polyline", { class: "hit", points: ptsAttr(item.points) }, g);
@@ -524,7 +584,8 @@ function drawItems() {
     if (q) {
       const a = labelAnchor(item);
       const txt = el("text", { class: "label", x: a[0], y: a[1], "font-size": 13 / z, "text-anchor": item.type === "count" ? "start" : "middle" }, g);
-      txt.textContent = item.type === "count" ? `${item.name}: ${q}` : q;
+      const tick = item.status === "approved" ? "✓ " : "";
+      txt.textContent = tick + (item.type === "count" ? `${item.name}: ${q}` : q);
     }
     // corners of the selected measurement can be dragged
     if (selected && state.tool === "select" && item.type !== "count") {
@@ -754,69 +815,206 @@ function applyScale(sc) {
   save();
   updateScaleChip(); drawOverlay(); renderRows();
 }
-function toggleScalePop(open) {
-  const pop = $("scale-pop");
-  const show = open === undefined ? pop.hidden : open;
-  pop.hidden = !show;
-  $("scale-btn").setAttribute("aria-expanded", show ? "true" : "false");
+
+/* ----------------------------------------------------------------- groups */
+const GROUP_COLOURS = ["#0a84ff", "#00a878", "#ff8a00", "#8e5cff", "#e5484d", "#00a3b8", "#b88400", "#d6409f"];
+const groupOf = (item) => (item.group || "").trim();
+/** Group names in the order they first appear. */
+function groupOrder() {
+  const seen = [];
+  for (const it of state.items) { const g = groupOf(it); if (g && !seen.includes(g)) seen.push(g); }
+  return seen;
+}
+function groupColours() {
+  const map = new Map();
+  groupOrder().forEach((g, i) => map.set(g, GROUP_COLOURS[i % GROUP_COLOURS.length]));
+  return map;
+}
+/** Items in bill-of-quantities order: by group, then in the order they were measured. */
+function orderedItems() {
+  const order = groupOrder();
+  const rank = (it) => { const g = groupOf(it); return g ? order.indexOf(g) : order.length; };
+  return state.items.map((it, i) => [it, i]).sort((a, b) => rank(a[0]) - rank(b[0]) || a[1] - b[1]).map((x) => x[0]);
+}
+
+/** Wires an input so that one edit is one undo step. */
+function editable(input, apply) {
+  let before = null;
+  input.addEventListener("focus", () => { before = snapshot(); });
+  input.addEventListener("change", () => {
+    const prev = before || snapshot();
+    if (apply() === false) return;
+    if (prev !== snapshot()) { hist.undo.push(prev); if (hist.undo.length > 80) hist.undo.shift(); hist.redo.length = 0; }
+    before = snapshot();
+    save(); renderRows(); drawOverlay(); updateHistoryButtons();
+  });
+  input.addEventListener("keydown", (e) => { if (e.key === "Enter" && input.type !== "checkbox") input.blur(); e.stopPropagation(); });
+  input.addEventListener("click", (e) => e.stopPropagation());
 }
 
 /* ------------------------------------------------------------------- rows */
 const TRASH = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M10 7V5h4v2M7 7l1 12h8l1-12M10.5 10.5v6M13.5 10.5v6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const CHEVRON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+let uid = 0;
+
+function chip(text, cls) {
+  const c = document.createElement("span");
+  c.className = "chip " + (cls || ""); c.textContent = text;
+  return c;
+}
+
+function renderRow(item, colours) {
+  const li = document.createElement("li");
+  li.className = "rowi" + (item.id === state.selectedId ? " selected" : "") + (item.type === "area" && item.deduct ? " deduct" : "");
+  li.dataset.id = item.id;
+  const colour = colours.get(groupOf(item));
+  if (colour) li.style.setProperty("--c", colour);
+
+  const ok = document.createElement("button");
+  ok.type = "button"; ok.className = "ok";
+  ok.setAttribute("aria-pressed", item.status === "approved" ? "true" : "false");
+  ok.title = t(item.status === "approved" ? "approved" : "approve");
+  ok.setAttribute("aria-label", ok.title + ": " + item.name);
+  ok.addEventListener("click", (e) => {
+    e.stopPropagation();
+    pushHistory();
+    item.status = item.status === "approved" ? "draft" : "approved";
+    save(); renderRows(); drawOverlay();
+  });
+
+  const name = document.createElement("input");
+  name.className = "name"; name.type = "text"; name.value = item.name;
+  name.setAttribute("aria-label", t("col_desc"));
+  name.addEventListener("input", () => { item.name = name.value; save(); });
+  editable(name, () => { item.name = name.value; });
+  name.addEventListener("click", () => selectItem(item.id, false));
+
+  const qty = document.createElement("span");
+  const q = qtyText(item);
+  qty.className = "qty" + (q ? "" : " missing");
+  qty.textContent = q || t("scale_needed");
+
+  const del = document.createElement("button");
+  del.type = "button"; del.className = "del"; del.innerHTML = TRASH;
+  del.title = t("delete"); del.setAttribute("aria-label", t("delete") + ": " + item.name);
+  del.addEventListener("click", (e) => { e.stopPropagation(); removeItem(item.id); });
+
+  const meta = document.createElement("div");
+  meta.className = "meta";
+  meta.append(chip(t("page_short", { n: item.page })), chip(t("tool_" + item.type)));
+  if (item.type === "area") { const per = lenText(polyLength(item.points.concat([item.points[0]])), item.page); if (per) meta.append(chip(`${t("perimeter")} ${per}`)); }
+  const q2 = qty2Text(item);
+  if (q2) meta.append(chip(`× ${fmt(toShownLen(Number(item.height)), 2)} ${t(state.unitSystem === "imperial" ? "unit_ft" : "unit_m")} = ${q2}`, "second"));
+  if (item.type === "area" && item.deduct) meta.append(chip(t("deducted"), "deduct"));
+  if (item.origin === "ai") meta.append(chip(t("origin_ai"), "ai"));
+
+  // details, shown for the selected line only
+  const more = document.createElement("div");
+  more.className = "rowx";
+  const field = (labelText, input) => {
+    const id = "f" + (++uid);
+    input.id = id;
+    const lab = document.createElement("label");
+    lab.htmlFor = id; lab.textContent = labelText;
+    const wrap = document.createElement("div");
+    wrap.className = "fld";
+    wrap.append(lab, input);
+    more.appendChild(wrap);
+    return wrap;
+  };
+  const grp = document.createElement("input");
+  grp.type = "text"; grp.value = item.group || ""; grp.placeholder = t("group_ph");
+  grp.setAttribute("list", "group-list"); grp.autocomplete = "off";
+  editable(grp, () => { item.group = grp.value.trim().slice(0, 80); });
+  field(t("group"), grp);
+  if (item.type !== "count") {
+    const h = document.createElement("input");
+    h.type = "number"; h.min = "0"; h.step = "any"; h.inputMode = "decimal";
+    h.value = Number(item.height) > 0 ? String(+toShownLen(Number(item.height)).toFixed(4)) : "";
+    h.placeholder = "0";
+    editable(h, () => {
+      const v = Number(h.value);
+      if (h.value.trim() === "" || !(v > 0)) delete item.height; else item.height = fromShownLen(v);
+    });
+    const w = field(`${t(item.type === "length" ? "height_len" : "height_area")}, ${t(state.unitSystem === "imperial" ? "unit_ft" : "unit_m")}`, h);
+    const out = document.createElement("span");
+    out.className = "fld-out";
+    out.textContent = q2 ? "= " + q2 : "";
+    w.appendChild(out);
+  }
+  if (item.type === "area") {
+    const box = document.createElement("label");
+    box.className = "check fld-check";
+    const cb = document.createElement("input");
+    cb.type = "checkbox"; cb.checked = !!item.deduct;
+    editable(cb, () => { item.deduct = cb.checked; if (!cb.checked) delete item.deduct; });
+    const sp = document.createElement("span"); sp.textContent = t("deduct");
+    box.append(cb, sp);
+    box.addEventListener("click", (e) => e.stopPropagation());
+    more.appendChild(box);
+  }
+
+  li.append(ok, name, qty, del, meta, more);
+  li.addEventListener("click", () => selectItem(item.id, true));
+  return li;
+}
 
 function renderRows() {
   const list = $("rows");
   list.textContent = "";
-  for (const item of state.items) {
-    const li = document.createElement("li");
-    li.className = "rowi" + (item.id === state.selectedId ? " selected" : "");
-    li.dataset.id = item.id;
-
-    const ok = document.createElement("button");
-    ok.type = "button"; ok.className = "ok";
-    ok.setAttribute("aria-pressed", item.status === "approved" ? "true" : "false");
-    ok.title = t(item.status === "approved" ? "approved" : "approve");
-    ok.setAttribute("aria-label", ok.title + ": " + item.name);
-    ok.addEventListener("click", (e) => {
-      e.stopPropagation();
-      pushHistory();
-      item.status = item.status === "approved" ? "draft" : "approved";
-      save(); renderRows(); drawOverlay();
-    });
-
-    const name = document.createElement("input");
-    name.className = "name"; name.type = "text"; name.value = item.name;
-    name.setAttribute("aria-label", t("col_desc"));
-    name.addEventListener("input", () => { item.name = name.value; save(); });
-    name.addEventListener("change", () => drawOverlay());
-    name.addEventListener("keydown", (e) => { if (e.key === "Enter") name.blur(); e.stopPropagation(); });
-    name.addEventListener("click", (e) => { e.stopPropagation(); selectItem(item.id, false); });
-
-    const qty = document.createElement("span");
-    const q = qtyText(item);
-    qty.className = "qty" + (q ? "" : " missing");
-    qty.textContent = q || t("scale_needed");
-
-    const del = document.createElement("button");
-    del.type = "button"; del.className = "del"; del.innerHTML = TRASH;
-    del.title = t("delete"); del.setAttribute("aria-label", t("delete") + ": " + item.name);
-    del.addEventListener("click", (e) => { e.stopPropagation(); removeItem(item.id); });
-
-    const meta = document.createElement("div");
-    meta.className = "meta";
-    const chips = [[t("page_short", { n: item.page }), ""], [t("tool_" + item.type), ""]];
-    if (item.type === "area") { const per = lenText(polyLength(item.points.concat([item.points[0]])), item.page); if (per) chips.push([`${t("perimeter")} ${per}`, ""]); }
-    if (item.origin === "ai") chips.push([t("origin_ai"), "ai"]);
-    for (const [text, cls] of chips) {
-      const c = document.createElement("span");
-      c.className = "chip " + cls; c.textContent = text;
-      meta.appendChild(c);
+  const colours = groupColours();
+  const order = groupOrder();
+  const items = orderedItems();
+  const grouped = order.length > 0;
+  let current = null, head = null, sums = null, sums2 = null, n = 0;
+  const closeGroup = () => {
+    if (!head) return;
+    head.querySelector(".gsum").textContent = totalsText(sums) + (sums2.size ? "  (" + totalsText(sums2) + ")" : "");
+    head.querySelector(".gcount").textContent = t("lines_n", { n });
+  };
+  for (const item of items) {
+    const g = groupOf(item);
+    if (grouped && g !== current) {
+      closeGroup();
+      current = g; sums = new Map(); sums2 = new Map(); n = 0;
+      head = document.createElement("li");
+      head.className = "ghead";
+      const folded = state.collapsed.includes(g);
+      const colour = colours.get(g);
+      if (colour) head.style.setProperty("--c", colour);
+      const btn = document.createElement("button");
+      btn.type = "button"; btn.className = "gtoggle";
+      btn.setAttribute("aria-expanded", folded ? "false" : "true");
+      btn.innerHTML = CHEVRON;
+      const nm = document.createElement("span"); nm.className = "gname"; nm.textContent = g || t("no_group");
+      const cnt = document.createElement("span"); cnt.className = "gcount";
+      btn.append(nm, cnt);
+      btn.title = t("group_toggle");
+      btn.addEventListener("click", () => {
+        state.collapsed = folded ? state.collapsed.filter((x) => x !== g) : state.collapsed.concat([g]);
+        save(); renderRows();
+      });
+      const sum = document.createElement("span"); sum.className = "gsum";
+      head.append(btn, sum);
+      list.appendChild(head);
     }
-
-    li.append(ok, name, qty, del, meta);
-    li.addEventListener("click", () => selectItem(item.id, true));
-    list.appendChild(li);
+    if (grouped) { addTotals(sums, measure(item)); addTotals(sums2, measure2(item)); n++; }
+    if (!(grouped && state.collapsed.includes(g))) list.appendChild(renderRow(item, colours));
   }
+  closeGroup();
+
+  // suggestions for the group field
+  const dl = $("group-list");
+  dl.textContent = "";
+  for (const g of order) { const o = document.createElement("option"); o.value = g; dl.appendChild(o); }
+
+  // totals across the whole bill
+  const tot = new Map(), tot2 = new Map();
+  for (const it of state.items) { addTotals(tot, measure(it)); addTotals(tot2, measure2(it)); }
+  const totals = $("totals");
+  totals.hidden = state.items.length < 2;
+  $("totals-v").textContent = totalsText(tot) + (tot2.size ? "  (" + totalsText(tot2) + ")" : "");
+
   const total = state.items.length;
   const done = state.items.filter((i) => i.status === "approved").length;
   $("boq-empty").hidden = total > 0;
@@ -828,8 +1026,13 @@ function renderRows() {
 }
 
 async function selectItem(id, jump) {
+  const changed = state.selectedId !== id;
   state.selectedId = id;
   const item = state.items.find((i) => i.id === id);
+  if (item && changed && groupOf(item) && state.collapsed.includes(groupOf(item))) {
+    state.collapsed = state.collapsed.filter((x) => x !== groupOf(item));
+    renderRows();
+  }
   document.querySelectorAll(".rowi").forEach((r) => r.classList.toggle("selected", r.dataset.id === id));
   if (item && jump && item.page !== state.pageNum) await goToPage(item.page);
   drawOverlay();
@@ -841,14 +1044,119 @@ function removeItem(id) {
   save(); renderRows(); drawOverlay();
 }
 
+/* ----------------------------------------------------------------- layers */
+function flattenOrder(order, out) {
+  for (const x of order || []) {
+    if (typeof x === "string") out.push(x);
+    else if (Array.isArray(x)) flattenOrder(x, out);
+    else if (x && Array.isArray(x.order)) flattenOrder(x.order, out);
+  }
+  return out;
+}
+function allLayers() {
+  const cfg = state.ocConfig;
+  if (!cfg) return [];
+  const groups = new Map();
+  for (const [id, g] of cfg) groups.set(id, g);
+  let ids = [];
+  try { ids = flattenOrder(cfg.getOrder(), []).filter((id) => groups.has(id)); } catch (e) { ids = []; }
+  for (const id of groups.keys()) if (!ids.includes(id)) ids.push(id);
+  return [...new Set(ids)].map((id) => ({ id, name: String(groups.get(id).name || id), visible: !!groups.get(id).visible }));
+}
+function applyHiddenLayers() {
+  const cfg = state.ocConfig;
+  if (!cfg) { state.hiddenLayers = []; return; }
+  const known = new Set(allLayers().map((l) => l.id));
+  state.hiddenLayers = state.hiddenLayers.filter((id) => known.has(id));
+  for (const id of state.hiddenLayers) { try { cfg.setVisibility(id, false); } catch (e) { /* ignore */ } }
+  syncHidden();
+}
+/** Reads back which layers are off (switching one on can switch others off). */
+function syncHidden() { state.hiddenLayers = allLayers().filter((l) => !l.visible).map((l) => l.id); }
+
+let layerTimer = 0;
+function layersChanged() {
+  syncHidden();
+  layerStamp++;
+  snapCache.clear();
+  state.snapIndex = null; state.snap = null;
+  save();
+  renderLayers();
+  clearTimeout(layerTimer);
+  layerTimer = setTimeout(() => { if (state.pdf) renderPage(false); }, 120);
+}
+function setLayers(ids, visible) {
+  const cfg = state.ocConfig;
+  if (!cfg || !ids.length) return;
+  for (const id of ids) { try { cfg.setVisibility(id, visible); } catch (e) { /* ignore */ } }
+  layersChanged();
+}
+
+function shownLayers() {
+  let list = allLayers();
+  if (layersScope === "page" && state.snapIndex) list = list.filter((l) => state.snapIndex.layers.has(l.id));
+  const q = $("layers-search").value.trim().toLowerCase();
+  if (q) list = list.filter((l) => l.name.toLowerCase().includes(q));
+  return list;
+}
+function renderLayers() {
+  const btn = $("layers-btn");
+  const total = state.ocConfig ? allLayers().length : 0;
+  btn.classList.toggle("has-hidden", state.hiddenLayers.length > 0);
+  if ($("layers-pop").hidden) return;
+  const ul = $("layers-list");
+  ul.textContent = "";
+  $("layers-page").setAttribute("aria-pressed", layersScope === "page" ? "true" : "false");
+  $("layers-all").setAttribute("aria-pressed", layersScope === "all" ? "true" : "false");
+  const controls = $("layers-controls");
+  controls.hidden = !total;
+  const list = total ? shownLayers() : [];
+  for (const l of list) {
+    const li = document.createElement("li");
+    const lab = document.createElement("label");
+    const cb = document.createElement("input");
+    cb.type = "checkbox"; cb.checked = l.visible;
+    cb.addEventListener("change", () => setLayers([l.id], cb.checked));
+    const sp = document.createElement("span"); sp.textContent = l.name;
+    lab.append(cb, sp);
+    li.appendChild(lab);
+    ul.appendChild(li);
+  }
+  const empty = $("layers-empty");
+  empty.hidden = list.length > 0;
+  empty.textContent = !total ? t("layers_none") : (layersScope === "page" && !state.snapIndex ? t("layers_reading") : t("layers_nomatch"));
+  $("layers-count").textContent = total ? t("layers_count", { hidden: state.hiddenLayers.length, total }) : "";
+}
+
+/* -------------------------------------------------------------- popovers */
+function setPop(name, open) {
+  const pop = $(name + "-pop"), btn = $(name + "-btn");
+  const show = open === undefined ? pop.hidden : open;
+  pop.hidden = !show;
+  btn.setAttribute("aria-expanded", show ? "true" : "false");
+  return show;
+}
+function closePops() { setPop("scale", false); setPop("layers", false); }
+function toggleScalePop(open) { const show = setPop("scale", open); if (show) setPop("layers", false); }
+function toggleLayersPop(open) {
+  const show = setPop("layers", open);
+  if (show) { setPop("scale", false); renderLayers(); }
+}
+
 /* ----------------------------------------------------------------- export */
 function exportRows() {
-  const head = ["#", t("col_desc"), t("col_unit"), t("col_qty"), t("col_method"), t("col_source"), t("col_scale"), t("col_status"), t("col_origin")];
-  const rows = state.items.map((item, i) => {
-    const q = measure(item);
+  const lenUnit = t(state.unitSystem === "imperial" ? "unit_ft" : "unit_m");
+  const head = ["#", t("col_group"), t("col_desc"), t("col_unit"), t("col_qty"), `${t("col_height")}, ${lenUnit}`, t("col_unit2"), t("col_qty2"),
+    t("col_method"), t("col_source"), t("col_scale"), t("col_status"), t("col_origin")];
+  const num = (q) => (q.ok ? Number(q.value.toFixed(q.decimals === 0 ? 0 : 3)) : "");
+  const rows = orderedItems().map((item, i) => {
+    const q = measure(item), q2 = measure2(item);
     const sc = pageScale(item.page);
     return [
-      i + 1, item.name, q.ok ? q.unit : "", q.ok ? Number(q.value.toFixed(q.decimals === 0 ? 0 : 3)) : "",
+      i + 1, groupOf(item), item.name + (item.type === "area" && item.deduct ? ` (${t("deducted")})` : ""),
+      q.ok ? q.unit : "", num(q),
+      Number(item.height) > 0 ? Number(toShownLen(Number(item.height)).toFixed(3)) : "",
+      q2.ok ? q2.unit : "", num(q2),
       t("tool_" + item.type), `${state.fileName}, ${t("page_short", { n: item.page })}`,
       item.type === "count" ? "" : (sc ? sc.label : ""),
       t(item.status === "approved" ? "approved" : "draft"),
@@ -856,6 +1164,21 @@ function exportRows() {
     ];
   });
   return [head].concat(rows);
+}
+/** Totals by group and unit, for the summary sheet. */
+function summaryRows() {
+  const rows = [[t("col_group"), t("col_unit"), t("total")]];
+  const add = (label, items) => {
+    const m = new Map();
+    for (const it of items) { addTotals(m, measure(it)); addTotals(m, measure2(it)); }
+    for (const [unit, v] of m) rows.push([label, unit, Number(v.value.toFixed(v.decimals === 0 ? 0 : 3))]);
+  };
+  const order = groupOrder();
+  for (const g of order) add(g, state.items.filter((it) => groupOf(it) === g));
+  const loose = state.items.filter((it) => !groupOf(it));
+  if (loose.length) add(order.length ? t("no_group") : t("total"), loose);
+  if (order.length) add(t("total"), state.items);
+  return rows;
 }
 const baseName = () => state.fileName.replace(/\.pdf$/i, "") || "takeoff";
 
@@ -880,7 +1203,7 @@ function loadXlsx() {
       const s = document.createElement("script");
       s.src = VENDOR + "xlsx.mini.min.js";
       s.onload = () => resolve(window.XLSX);
-      s.onerror = () => reject(new Error("xlsx"));
+      s.onerror = () => { xlsxLoading = null; reject(new Error("xlsx")); };
       document.head.appendChild(s);
     });
   }
@@ -890,9 +1213,13 @@ async function exportXlsx() {
   try {
     const XLSX = await loadXlsx();
     const ws = XLSX.utils.aoa_to_sheet(exportRows());
-    ws["!cols"] = [{ wch: 5 }, { wch: 34 }, { wch: 8 }, { wch: 12 }, { wch: 12 }, { wch: 34 }, { wch: 16 }, { wch: 14 }, { wch: 20 }];
+    ws["!cols"] = [{ wch: 5 }, { wch: 20 }, { wch: 34 }, { wch: 8 }, { wch: 12 }, { wch: 14 }, { wch: 8 }, { wch: 12 }, { wch: 12 }, { wch: 34 }, { wch: 16 }, { wch: 14 }, { wch: 20 }];
+    ws["!autofilter"] = { ref: XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: Math.max(1, state.items.length), c: 12 } }) };
+    const sum = XLSX.utils.aoa_to_sheet(summaryRows());
+    sum["!cols"] = [{ wch: 26 }, { wch: 10 }, { wch: 14 }];
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "BOQ");
+    XLSX.utils.book_append_sheet(wb, sum, t("summary_sheet").slice(0, 31));
     const out = XLSX.write(wb, { bookType: "xlsx", type: "array" });
     download(new Blob([out], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }), baseName() + "-BOQ.xlsx");
   } catch (e) {
@@ -959,7 +1286,7 @@ async function aiDraft() {
     off.width = Math.round(vp.width); off.height = Math.round(vp.height);
     const ctx = off.getContext("2d");
     ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, off.width, off.height);
-    await page.render({ canvas: off, canvasContext: ctx, viewport: vp }).promise;
+    await page.render({ canvas: off, canvasContext: ctx, viewport: vp, optionalContentConfigPromise: ocPromise() }).promise;
     const b64 = off.toDataURL("image/png").split(",")[1];
 
     const res = await fetch("https://api.anthropic.com/v1/messages", {
@@ -1033,6 +1360,10 @@ function addAiItems(out, pageNum, rs, W, H) {
 /* ----------------------------------------------------------------- events */
 function wire() {
   const overlay = $("overlay");
+  const defs = el("defs", {}, overlay);
+  const pat = el("pattern", { id: "hatch", width: "8", height: "8", patternUnits: "userSpaceOnUse", patternTransform: "rotate(45)" }, defs);
+  el("rect", { width: "8", height: "8", fill: "rgba(229, 72, 77, .10)" }, pat);
+  el("line", { x1: "0", y1: "0", x2: "0", y2: "8", stroke: "rgba(229, 72, 77, .75)", "stroke-width": "2.2" }, pat);
   el("g", { id: "g-items" }, overlay);
   el("g", { id: "g-live" }, overlay);
   try { state.snapOn = localStorage.getItem("qtomate:snap") !== "0"; } catch (e) { /* ignore */ }
@@ -1061,13 +1392,20 @@ function wire() {
   });
 
   // tools
-  document.querySelectorAll(".tool[data-tool]").forEach((b) => b.addEventListener("click", () => { toggleScalePop(false); setTool(b.dataset.tool); }));
+  document.querySelectorAll(".tool[data-tool]").forEach((b) => b.addEventListener("click", () => { closePops(); setTool(b.dataset.tool); }));
   $("scale-btn").addEventListener("click", () => toggleScalePop());
+  $("layers-btn").addEventListener("click", () => toggleLayersPop());
+  $("layers-search").addEventListener("input", renderLayers);
+  $("layers-search").addEventListener("keydown", (e) => { if (e.key === "Escape") { toggleLayersPop(false); return; } e.stopPropagation(); });
+  $("layers-page").addEventListener("click", () => { layersScope = "page"; renderLayers(); });
+  $("layers-all").addEventListener("click", () => { layersScope = "all"; renderLayers(); });
+  $("layers-show-all").addEventListener("click", () => setLayers(shownLayers().filter((l) => !l.visible).map((l) => l.id), true));
+  $("layers-hide-all").addEventListener("click", () => setLayers(shownLayers().filter((l) => l.visible).map((l) => l.id), false));
   $("scale-custom-apply").addEventListener("click", () => {
     const r = Number($("scale-custom").value);
     if (r >= 1) applyScale({ mpp: r * M_PER_PT, label: "1:" + r });
   });
-  $("calibrate-btn").addEventListener("click", () => { toggleScalePop(false); setTool("calibrate"); });
+  $("calibrate-btn").addEventListener("click", () => { closePops(); setTool("calibrate"); });
   $("calib-apply").addEventListener("click", applyCalibration);
   $("calib-value").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); applyCalibration(); } e.stopPropagation(); });
   $("calib-unit").addEventListener("change", (e) => { try { localStorage.setItem("qtomate:calibunit:" + state.unitSystem, e.target.value); } catch (err) { /* ignore */ } });
@@ -1190,7 +1528,7 @@ function wire() {
     const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName);
     if ($("settings").open) return;
     if (e.key === "Shift" || e.key === "Alt") { if (lastPtr && overSheet) onMove({ clientX: lastPtr.clientX, clientY: lastPtr.clientY, shiftKey: e.shiftKey, altKey: e.altKey }); if (e.key === "Alt" && overSheet) e.preventDefault(); return; }
-    if (e.key === "Escape") { if (!$("scale-pop").hidden) toggleScalePop(false); else if (state.draft || state.calibPts) cancelDraft(); else if (state.tool !== "select") setTool("select"); return; }
+    if (e.key === "Escape") { if (!$("scale-pop").hidden || !$("layers-pop").hidden) closePops(); else if (state.draft || state.calibPts) cancelDraft(); else if (state.tool !== "select") setTool("select"); return; }
     if (typing || !state.pdf) return;
     if (e.ctrlKey || e.metaKey) {
       if (e.code === "KeyZ") { e.preventDefault(); if (e.shiftKey) redo(); else undo(); }
@@ -1205,8 +1543,9 @@ function wire() {
       else if (state.selectedId) { e.preventDefault(); removeItem(state.selectedId); }
       return;
     }
-    if (TOOL_KEYS[e.code]) { toggleScalePop(false); setTool(TOOL_KEYS[e.code]); if (lastPtr && overSheet) onMove(lastPtr); return; }
+    if (TOOL_KEYS[e.code]) { closePops(); setTool(TOOL_KEYS[e.code]); if (lastPtr && overSheet) onMove(lastPtr); return; }
     if (e.code === "KeyS") { setSnap(!state.snapOn); return; }
+    if (e.code === "KeyK") { toggleLayersPop(); return; }
     if (e.key === "+" || e.key === "=") { setZoom(state.zoom * 1.25); return; }
     if (e.key === "-") { setZoom(state.zoom / 1.25); return; }
     if (e.key === "0") { renderPage(true); return; }
