@@ -2,8 +2,8 @@
 // Everything runs in the browser. The PDF is never uploaded; only "AI draft"
 // sends an image of the current page to the Anthropic API with the user's own key.
 import * as pdfjsLib from "./vendor/pdf.min.mjs";
-import { LANGS, LANG_NAMES, makeT } from "./i18n.js?v=20261014b";
-import { SnapIndex, buildSnapIndex } from "./snap.js?v=20261014b";
+import { LANGS, LANG_NAMES, makeT } from "./i18n.js?v=20261023";
+import { SnapIndex, buildSnapIndex } from "./snap.js?v=20261023";
 
 const VENDOR = new URL("./vendor/", import.meta.url).href;
 pdfjsLib.GlobalWorkerOptions.workerSrc = VENDOR + "pdf.worker.min.mjs";
