@@ -2,6 +2,8 @@
 <html lang="ru">
 <head>
 <meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; media-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'; upgrade-insecure-requests">
+<meta name="referrer" content="strict-origin-when-cross-origin">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="dark">
 <meta name="theme-color" content="#080d1a">
@@ -20,8 +22,8 @@
 <link rel="alternate" hreflang="x-default" href="https://qtomate.dpdns.org/">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23080d1a'/%3E%3Crect x='7' y='7' width='18' height='18' rx='3' fill='none' stroke='%233de3ff' stroke-width='2.4'/%3E%3Crect x='16' y='16' width='9' height='9' rx='1.5' fill='%23b6ff5c'/%3E%3C/svg%3E">
 <link rel="preload" href="../fonts/onest-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="../assets/site.css?v=20261022">
-<script src="../assets/site.js?v=20261022" defer></script>
+<link rel="stylesheet" href="../assets/site.css?v=20261023">
+<script src="../assets/site.js?v=20261023" defer></script>
 <script type="application/ld+json">{"@context": "https://schema.org", "@type": "SoftwareApplication", "name": "QtoMate", "applicationCategory": "BusinessApplication", "operatingSystem": "Web browser", "url": "https://qtomate.dpdns.org/ru/", "inLanguage": "ru", "description": "QtoMate измеряет строительные чертежи в PDF и составляет ведомость объёмов работ. Каждое количество привязано к чертежу, и каждую строку утверждает сметчик.", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}}</script>
 </head>
 <body>
@@ -407,49 +409,7 @@
     </div>
   </div>
 </footer>
-<script>
-(function () {
-  var demo = document.getElementById('demo');
-  if (!demo) return;
-  var rows = Array.prototype.slice.call(demo.querySelectorAll('.boq-row'));
-  var state = document.getElementById('boq-state');
-  var approve = document.getElementById('approve');
-
-  function current() { return demo.querySelector('.boq-row[aria-pressed="true"]'); }
-
-  function refresh() {
-    var done = demo.querySelectorAll('.boq-row.is-approved').length;
-    state.textContent = (done === rows.length ? demo.dataset.tAll : demo.dataset.tProgress).replace('{done}', done).replace('{total}', rows.length);
-    state.classList.toggle('done', done === rows.length);
-    var cur = current();
-    approve.textContent = cur && cur.classList.contains('is-approved') ? demo.dataset.tApproved : demo.dataset.tApprove;
-    approve.disabled = !!(cur && cur.classList.contains('is-approved'));
-    approve.style.opacity = approve.disabled ? '.55' : '';
-    approve.style.cursor = approve.disabled ? 'default' : '';
-  }
-
-  function select(key) {
-    rows.forEach(function (r) { r.setAttribute('aria-pressed', r.dataset.key === key ? 'true' : 'false'); });
-    demo.setAttribute('data-sel', key);
-    refresh();
-  }
-
-  rows.forEach(function (r) {
-    r.addEventListener('click', function () { select(r.dataset.key); });
-  });
-  Array.prototype.forEach.call(demo.querySelectorAll('.plan .el'), function (g) {
-    g.addEventListener('click', function () { select(g.dataset.key); });
-  });
-  approve.addEventListener('click', function () {
-    var cur = current();
-    if (!cur) return;
-    cur.classList.add('is-approved');
-    var next = rows.filter(function (r) { return !r.classList.contains('is-approved'); })[0];
-    if (next) select(next.dataset.key); else refresh();
-  });
-  refresh();
-})();
-</script>
+<script src="../assets/home.js?v=20261023" defer></script>
 
 </body>
 </html>
