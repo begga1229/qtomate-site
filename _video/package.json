@@ -1,0 +1,21 @@
+{
+  "name": "qtomate-promo",
+  "version": "1.0.0",
+  "scripts": {
+    "audio": "python3 scripts/make_audio.py",
+    "render": "bash scripts/render.sh",
+    "studio": "remotion studio src/index.ts",
+    "typecheck": "tsc --noEmit -p ."
+  },
+  "dependencies": {
+    "@remotion/cli": "^4.0.300",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "remotion": "^4.0.300"
+  },
+  "private": true,
+  "devDependencies": {
+    "@types/react": "^18.3.12",
+    "typescript": "^5.6.3"
+  }
+}

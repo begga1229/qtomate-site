@@ -169,6 +169,11 @@
   .boq-foot .button { padding: 11px 16px; font-size: 14.5px; border-radius: 10px; }
   .demo-caption { margin-top: 16px; font-size: 14px; color: var(--muted); }
 
+  /* ---------- promo video ---------- */
+  div.band.promo { background: var(--bg); }
+  .promo .window { margin-top: clamp(32px, 4vw, 48px); }
+  .promo video { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; background: var(--bg); }
+
   /* ---------- generic sections ---------- */
   .band { padding-block: clamp(64px, 9vw, 120px); }
   .band + .band { border-top: 1px solid var(--line); }
