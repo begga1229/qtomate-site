@@ -34,7 +34,7 @@ from p_glossary import GLOSSARY  # noqa: E402
 BASE = "https://qtomate.dpdns.org"
 DEFAULT = "en"
 MAIL = "begench@qtomate.dpdns.org"
-VERSION = "20261014"
+VERSION = "20261022"
 
 RANGES = {
     "cyrillic-ext": "U+0460-052F,U+1C80-1C8A,U+20B4,U+2DE0-2DFF,U+A640-A69F,U+FE2E-FE2F",
@@ -319,7 +319,7 @@ def build_home(lang, template):
 
     t = template
     hero = t[t.index('<div class="shell hero" id="top">'): t.index("  </main>\n</div>")]
-    rest = t[t.index('<section class="band" aria-labelledby="why-h">'): t.index('<footer class="site">')]
+    rest = t[t.index('<div class="band promo" id="video"'): t.index('<footer class="site">')]
     script = t[t.index("<script>"): t.index("</body>")]
     rest = rest.replace('<section class="band" aria-labelledby="about-h">', '<section class="band" id="about" aria-labelledby="about-h">')
     body = re.sub(r"\{\{([a-z0-9_]+)\}\}", sub, f'<div class="blueprint first">\n{hero}</div>\n{rest}')
@@ -567,6 +567,35 @@ SITE_JS = """// Closes the mobile menu on an outside click and on Escape.
   document.addEventListener('keydown', function (e) {
     if (e.key !== 'Escape') return;
     openMenus().forEach(function (d) { d.removeAttribute('open'); d.querySelector('summary').focus(); });
+  });
+})();
+
+// Plays muted videos marked data-autoplay while they are on screen. Skipped when the
+// visitor prefers reduced motion; a video the visitor paused stays paused.
+(function () {
+  var videos = document.querySelectorAll('video[data-autoplay]');
+  if (!videos.length || !('IntersectionObserver' in window)) return;
+  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) {
+      var v = e.target;
+      if (e.isIntersecting) {
+        if (v.dataset.userPaused) return;
+        var p = v.play();
+        if (p && p.catch) p.catch(function () {});
+      } else if (!v.paused) {
+        v.dataset.autoPause = '1';
+        v.pause();
+      }
+    });
+  }, { threshold: 0.5 });
+  videos.forEach(function (v) {
+    v.addEventListener('pause', function () {
+      if (v.dataset.autoPause) delete v.dataset.autoPause;
+      else v.dataset.userPaused = '1';
+    });
+    v.addEventListener('play', function () { delete v.dataset.userPaused; });
+    io.observe(v);
   });
 })();
 """

@@ -177,6 +177,11 @@
   .boq-foot .button { padding: 11px 16px; font-size: 14.5px; border-radius: 10px; }
   .demo-caption { margin-top: 16px; font-size: 14px; color: var(--muted); }
 
+  /* ---------- promo video ---------- */
+  div.band.promo { background: var(--bg); }
+  .promo .window { margin-top: clamp(32px, 4vw, 48px); }
+  .promo video { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; background: var(--bg); }
+
   /* ---------- generic sections ---------- */
   .band { padding-block: clamp(64px, 9vw, 120px); }
   .band + .band { border-top: 1px solid var(--line); }
@@ -417,6 +422,21 @@
     <p class="demo-caption">{{demo_caption}}</p>
   </div>
   </main>
+</div>
+
+<div class="band promo" id="video" role="region" aria-labelledby="promo-h">
+  <div class="shell">
+    <h2 id="promo-h">{{promo_h}}</h2>
+    <p class="intro">{{promo_intro}}</p>
+    <div class="window">
+      <div class="window-bar"><i></i><i></i><i></i><span>{{promo_bar}}</span></div>
+      <video data-autoplay controls muted loop playsinline preload="none" width="1280" height="720"
+             poster="{{rel}}media/promo-{{lang}}.jpg" aria-describedby="promo-cap">
+        <source src="{{rel}}media/promo-{{lang}}.mp4" type="video/mp4">
+      </video>
+    </div>
+    <p class="demo-caption" id="promo-cap">{{promo_caption}}</p>
+  </div>
 </div>
 
 <section class="band" aria-labelledby="why-h">
