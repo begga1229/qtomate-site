@@ -34,14 +34,16 @@ from p_glossary import GLOSSARY  # noqa: E402
 BASE = "https://qtomate.dpdns.org"
 DEFAULT = "en"
 MAIL = "begench@qtomate.dpdns.org"
-VERSION = "20261023"
+SECURITY_TXT_EXPIRES = "2027-10-01T00:00:00Z"  # security.txt must be renewed before this date
+VERSION = "20261024"
 
 # Content-Security-Policy for the site pages, set with <meta> because GitHub Pages cannot
 # send headers. Only our own files may load; no inline or third-party scripts. Inline
 # style attributes are allowed because the demo plan uses them for its draw animation.
 SITE_CSP = ("default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; "
             "img-src 'self' data:; font-src 'self'; media-src 'self'; connect-src 'self'; "
-            "object-src 'none'; base-uri 'self'; form-action 'none'; upgrade-insecure-requests")
+            "object-src 'none'; base-uri 'self'; form-action 'none'; upgrade-insecure-requests; "
+            "require-trusted-types-for 'script'; trusted-types 'none'")
 SECURITY_META = (f'<meta http-equiv="Content-Security-Policy" content="{SITE_CSP}">\n'
                  '<meta name="referrer" content="strict-origin-when-cross-origin">')
 
@@ -569,7 +571,13 @@ def build_css(template):
             + fontface("../") + "\n" + base + "\n" + steps + "\n" + extra)
 
 
-SITE_JS = """// Closes the mobile menu on an outside click and on Escape.
+SITE_JS = """// Keeps the site out of other sites' frames (clickjacking); GitHub Pages cannot send X-Frame-Options.
+if (window.top !== window.self) {
+  document.documentElement.hidden = true;
+  try { window.top.location.href = location.href; } catch (e) { /* cross-origin frame: stay hidden */ }
+}
+
+// Closes the mobile menu on an outside click and on Escape.
 (function () {
   function openMenus() { return document.querySelectorAll('details.menu[open]'); }
   document.addEventListener('click', function (e) {
@@ -653,6 +661,9 @@ def build():
           '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">\n'
           + "\n".join(urls) + "\n</urlset>\n")
     write("robots.txt", f"User-agent: *\nAllow: /\n\nSitemap: {BASE}/sitemap.xml\n")
+    # RFC 9116: where to report a security problem. Renew Expires before it passes.
+    write(".well-known/security.txt", f"Contact: mailto:{MAIL}\nExpires: {SECURITY_TXT_EXPIRES}\n"
+          f"Preferred-Languages: en, ru, uz, tr\nCanonical: {BASE}/.well-known/security.txt\n")
     print(f"built {len(segs) * len(LANGS)} pages, 404.html, assets, sitemap.xml, robots.txt")
 
 
