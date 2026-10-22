@@ -1,3 +1,9 @@
+// Keeps the site out of other sites' frames (clickjacking); GitHub Pages cannot send X-Frame-Options.
+if (window.top !== window.self) {
+  document.documentElement.hidden = true;
+  try { window.top.location.href = location.href; } catch (e) { /* cross-origin frame: stay hidden */ }
+}
+
 // Closes the mobile menu on an outside click and on Escape.
 (function () {
   function openMenus() { return document.querySelectorAll('details.menu[open]'); }

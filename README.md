@@ -36,7 +36,8 @@ A static, browser-only app: no build step, no server.
 - `app/index.html`, `app/app.css`, `app/app.js`: the workspace itself.
 - `app/snap.js`: reads the vector lines of a PDF page and finds the real point under the cursor (line end, midpoint, crossing, nearest point on a line).
 - `app/i18n.js`: the app's strings in English, Russian, Uzbek and Turkish.
-- `app/vendor/`: PDF.js and SheetJS, self-hosted.
+- `app/xlsx.js`: writes the Excel export (no third-party library).
+- `app/vendor/`: PDF.js, self-hosted.
 
 When you change `app.js`, `app.css`, `i18n.js` or `snap.js`, bump the `?v=` value in `app/index.html` and in the two imports at the top of `app/app.js`, so browsers load the new files together.
 
@@ -57,4 +58,14 @@ GitHub Pages cannot send HTTP headers, so each page sets a Content-Security-Poli
 - Site pages: `SITE_CSP` in `_build/build.py`. Only files from this site may load, with no inline or third-party scripts. The hero demo script is therefore written to `assets/home.js` rather than inlined.
 - The workspace: the `<meta>` tag at the top of `app/index.html`. The only outside connection it allows is `https://api.anthropic.com` for AI drafting.
 
-If you add an analytics script, a font CDN or another API, add its origin to the matching policy, or the browser will block it. The workspace also escapes CSV cells that start with `= + - @`, so names cannot run as Excel formulas.
+If you add an analytics script, a font CDN or another API, add its origin to the matching policy, or the browser will block it.
+
+Both policies also enforce Trusted Types: no code may turn a string into HTML or script. The workspace's only policy, at the top of `app/app.js`, lets PDF.js start its worker from this site. Use `textContent` and DOM nodes, never `innerHTML`.
+
+Other measures:
+
+- Pages hide themselves when framed by another site (`assets/site.js`, `app/app.js`).
+- The workspace keeps the Claude API key for the current tab only, unless the user ticks "Remember the key on this device".
+- CSV cells that start with `= + - @` are escaped, and the Excel export writes all text as text, so names cannot run as formulas.
+- `.well-known/security.txt` says where to report a problem. Renew `SECURITY_TXT_EXPIRES` in `_build/build.py` before it passes.
+- CodeQL scans the JavaScript on every push and pull request, and weekly (`.github/workflows/codeql.yml`). Results are in the repository's Security tab.

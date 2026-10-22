@@ -2,8 +2,27 @@
 // Everything runs in the browser. The PDF is never uploaded; only "AI draft"
 // sends an image of the current page to the Anthropic API with the user's own key.
 import * as pdfjsLib from "./vendor/pdf.min.mjs";
-import { LANGS, LANG_NAMES, makeT } from "./i18n.js?v=20261023b";
-import { SnapIndex, buildSnapIndex } from "./snap.js?v=20261023b";
+import { LANGS, LANG_NAMES, makeT } from "./i18n.js?v=20261024";
+import { SnapIndex, buildSnapIndex } from "./snap.js?v=20261024";
+import { writeXlsx } from "./xlsx.js?v=20261024";
+
+// Trusted Types (enforced by the CSP in index.html): the only string the browser may turn
+// into code is a script URL on this site, which PDF.js needs to start its worker.
+if (window.trustedTypes && window.trustedTypes.createPolicy) {
+  window.trustedTypes.createPolicy("default", {
+    createScriptURL(url) {
+      const u = new URL(url, location.href);
+      if (u.origin === location.origin) return u.href;
+      throw new TypeError("Blocked script URL: " + url);
+    },
+  });
+}
+// The workspace must not run inside another site's frame (clickjacking); GitHub Pages
+// cannot send X-Frame-Options, so the page hides itself and tries to leave the frame.
+if (window.top !== window.self) {
+  document.documentElement.hidden = true;
+  try { window.top.location.href = location.href; } catch (e) { /* cross-origin frame: stay hidden */ }
+}
 
 const VENDOR = new URL("./vendor/", import.meta.url).href;
 pdfjsLib.GlobalWorkerOptions.workerSrc = VENDOR + "pdf.worker.min.mjs";
@@ -854,8 +873,16 @@ function editable(input, apply) {
 }
 
 /* ------------------------------------------------------------------- rows */
-const TRASH = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M10 7V5h4v2M7 7l1 12h8l1-12M10.5 10.5v6M13.5 10.5v6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-const CHEVRON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+// icons are built as DOM nodes, so the app never turns a string into HTML (see Trusted Types in index.html)
+const icon = (d, width) => {
+  const svg = document.createElementNS(SVGNS, "svg");
+  svg.setAttribute("viewBox", "0 0 24 24");
+  svg.setAttribute("aria-hidden", "true");
+  el("path", { d, fill: "none", stroke: "currentColor", "stroke-width": width, "stroke-linecap": "round", "stroke-linejoin": "round" }, svg);
+  return svg;
+};
+const TRASH = "M5 7h14M10 7V5h4v2M7 7l1 12h8l1-12M10.5 10.5v6M13.5 10.5v6";
+const CHEVRON = "M9 6l6 6-6 6";
 let uid = 0;
 
 function chip(text, cls) {
@@ -896,7 +923,7 @@ function renderRow(item, colours) {
   qty.textContent = q || t("scale_needed");
 
   const del = document.createElement("button");
-  del.type = "button"; del.className = "del"; del.innerHTML = TRASH;
+  del.type = "button"; del.className = "del"; del.appendChild(icon(TRASH, "1.7"));
   del.title = t("delete"); del.setAttribute("aria-label", t("delete") + ": " + item.name);
   del.addEventListener("click", (e) => { e.stopPropagation(); removeItem(item.id); });
 
@@ -986,7 +1013,7 @@ function renderRows() {
       const btn = document.createElement("button");
       btn.type = "button"; btn.className = "gtoggle";
       btn.setAttribute("aria-expanded", folded ? "false" : "true");
-      btn.innerHTML = CHEVRON;
+      btn.appendChild(icon(CHEVRON, "2"));
       const nm = document.createElement("span"); nm.className = "gname"; nm.textContent = g || t("no_group");
       const cnt = document.createElement("span"); cnt.className = "gcount";
       btn.append(nm, cnt);
@@ -1199,32 +1226,12 @@ function exportCsv() {
   const text = exportRows().map((r) => r.map(esc).join(",")).join("\r\n");
   download(new Blob(["﻿" + text], { type: "text/csv;charset=utf-8" }), baseName() + "-BOQ.csv");
 }
-let xlsxLoading = null;
-function loadXlsx() {
-  if (window.XLSX) return Promise.resolve(window.XLSX);
-  if (!xlsxLoading) {
-    xlsxLoading = new Promise((resolve, reject) => {
-      const s = document.createElement("script");
-      s.src = VENDOR + "xlsx.mini.min.js";
-      s.onload = () => resolve(window.XLSX);
-      s.onerror = () => { xlsxLoading = null; reject(new Error("xlsx")); };
-      document.head.appendChild(s);
-    });
-  }
-  return xlsxLoading;
-}
-async function exportXlsx() {
+function exportXlsx() {
   try {
-    const XLSX = await loadXlsx();
-    const ws = XLSX.utils.aoa_to_sheet(exportRows());
-    ws["!cols"] = [{ wch: 5 }, { wch: 20 }, { wch: 34 }, { wch: 8 }, { wch: 12 }, { wch: 14 }, { wch: 8 }, { wch: 12 }, { wch: 12 }, { wch: 34 }, { wch: 16 }, { wch: 14 }, { wch: 20 }];
-    ws["!autofilter"] = { ref: XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: Math.max(1, state.items.length), c: 12 } }) };
-    const sum = XLSX.utils.aoa_to_sheet(summaryRows());
-    sum["!cols"] = [{ wch: 26 }, { wch: 10 }, { wch: 14 }];
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "BOQ");
-    XLSX.utils.book_append_sheet(wb, sum, t("summary_sheet").slice(0, 31));
-    const out = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+    const out = writeXlsx([
+      { name: "BOQ", rows: exportRows(), cols: [5, 20, 34, 8, 12, 14, 8, 12, 12, 34, 16, 14, 20], autofilter: true },
+      { name: t("summary_sheet"), rows: summaryRows(), cols: [26, 10, 14] },
+    ]);
     download(new Blob([out], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }), baseName() + "-BOQ.xlsx");
   } catch (e) {
     console.error(e);
@@ -1263,13 +1270,31 @@ function aiSystem() {
     "- In scale_note report the scale printed on the sheet if you can read it, otherwise an empty string.",
   ].join("\n");
 }
+// The key is kept for this tab only (sessionStorage) unless the user ticks "remember",
+// which keeps it in localStorage on this device.
+const KEY_ITEM = "qtomate:apikey";
+function storedKey() {
+  try { return sessionStorage.getItem(KEY_ITEM) || localStorage.getItem(KEY_ITEM) || ""; } catch (e) { return ""; }
+}
+function keyRemembered() {
+  try { return !!localStorage.getItem(KEY_ITEM); } catch (e) { return false; }
+}
+function storeKey(key, remember) {
+  try {
+    sessionStorage.removeItem(KEY_ITEM);
+    localStorage.removeItem(KEY_ITEM);
+    if (key) (remember ? localStorage : sessionStorage).setItem(KEY_ITEM, key);
+  } catch (e) { /* storage unavailable */ }
+}
 function aiConfig() {
-  try { return { key: localStorage.getItem("qtomate:apikey") || "", model: localStorage.getItem("qtomate:model") || DEFAULT_MODEL }; }
-  catch (e) { return { key: "", model: DEFAULT_MODEL }; }
+  let model = DEFAULT_MODEL;
+  try { model = localStorage.getItem("qtomate:model") || DEFAULT_MODEL; } catch (e) { /* ignore */ }
+  return { key: storedKey(), model };
 }
 function openSettings() {
   const cfg = aiConfig();
   $("ai-key").value = cfg.key;
+  $("ai-remember").checked = keyRemembered();
   $("ai-model").value = cfg.model;
   $("settings").showModal();
 }
@@ -1417,14 +1442,14 @@ function wire() {
   $("settings-btn").addEventListener("click", openSettings);
   $("ai-save").addEventListener("click", () => {
     try {
-      const key = $("ai-key").value.trim();
-      if (key) localStorage.setItem("qtomate:apikey", key); else localStorage.removeItem("qtomate:apikey");
+      storeKey($("ai-key").value.trim(), $("ai-remember").checked);
       localStorage.setItem("qtomate:model", $("ai-model").value.trim() || DEFAULT_MODEL);
     } catch (e) { /* ignore */ }
   });
   $("ai-remove").addEventListener("click", () => {
-    try { localStorage.removeItem("qtomate:apikey"); } catch (e) { /* ignore */ }
+    storeKey("", false);
     $("ai-key").value = "";
+    $("ai-remember").checked = false;
   });
   $("snap-btn").addEventListener("click", () => setSnap(!state.snapOn));
   $("undo-btn").addEventListener("click", undo);

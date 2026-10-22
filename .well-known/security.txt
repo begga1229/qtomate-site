@@ -1,0 +1,4 @@
+Contact: mailto:begench@qtomate.dpdns.org
+Expires: 2027-10-01T00:00:00Z
+Preferred-Languages: en, ru, uz, tr
+Canonical: https://qtomate.dpdns.org/.well-known/security.txt
