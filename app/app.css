@@ -243,8 +243,10 @@ dialog::backdrop { background: rgba(3, 6, 14, .7); backdrop-filter: blur(3px); }
 /* ---------- small screens ---------- */
 @media (max-width: 900px) {
   .work { overflow: auto; }
-  .stage { grid-template-columns: 1fr; grid-template-rows: auto minmax(60vh, 1fr) auto; }
-  .tools { flex-direction: row; overflow-x: auto; border-right: 0; border-bottom: 1px solid var(--line); padding: 6px 8px; }
+  /* The stage keeps its own height and the page scrolls. Stretched to the screen height,
+     the grid squeezed the tool row (to a sliver in WebKit) and cut off the bill of quantities. */
+  .stage { align-self: flex-start; grid-template-columns: 1fr; grid-template-rows: max-content 70vh max-content; grid-template-rows: max-content 70svh max-content; }
+  .tools { flex-direction: row; overflow-x: auto; border-right: 0; border-bottom: 1px solid var(--line); padding: 6px 8px; min-height: max-content; }
   .tool { width: auto; min-width: 66px; flex: none; }
   .tools-sep { width: 1px; height: auto; margin: 6px 2px; }
   .scale-pop { left: 12px; top: 84px; width: calc(100vw - 24px); }
@@ -253,11 +255,20 @@ dialog::backdrop { background: rgba(3, 6, 14, .7); backdrop-filter: blur(3px); }
   .rows { max-height: 46vh; }
   .file { display: none; }
   .top { gap: 8px; padding: 8px 10px; flex-wrap: wrap; }
-  .top-actions { margin-left: auto; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
+  /* brand and settings share the first row, the other controls take the second */
+  .top { row-gap: 8px; }
+  .top::after { content: ""; flex-basis: 100%; order: 2; }
+  .top-actions { display: contents; }
+  #settings-btn { order: 1; margin-left: auto; }
+  .top-actions .seg, #open-other { order: 3; }
   .seg select { padding: 7px 9px; font-size: 13px; max-width: 108px; }
   .top .btn { padding: 7px 10px; font-size: 13px; }
   .viewbar { flex-wrap: wrap; }
   .viewmid { order: 3; width: 100%; justify-content: space-between; }
   #zoom-fit { display: none; }
+}
+@media (max-width: 420px) {
+  .seg select { max-width: 100px; padding: 6px 8px; font-size: 12.5px; }
+  .top .btn:not(.icon) { padding: 6px 9px; font-size: 12.5px; }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }

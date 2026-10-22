@@ -2,8 +2,8 @@
 // Everything runs in the browser. The PDF is never uploaded; only "AI draft"
 // sends an image of the current page to the Anthropic API with the user's own key.
 import * as pdfjsLib from "./vendor/pdf.min.mjs";
-import { LANGS, LANG_NAMES, makeT } from "./i18n.js?v=20261014b";
-import { SnapIndex, buildSnapIndex } from "./snap.js?v=20261014b";
+import { LANGS, LANG_NAMES, makeT } from "./i18n.js?v=20261023b";
+import { SnapIndex, buildSnapIndex } from "./snap.js?v=20261023b";
 
 const VENDOR = new URL("./vendor/", import.meta.url).href;
 pdfjsLib.GlobalWorkerOptions.workerSrc = VENDOR + "pdf.worker.min.mjs";
@@ -250,6 +250,7 @@ async function openPdf(buffer, name, size) {
   try {
     const task = pdfjsLib.getDocument({
       data: buffer,
+      isEvalSupported: false, // never compile code from a PDF, even if a future PDF.js default changes
       cMapUrl: VENDOR + "cmaps/", cMapPacked: true,
       standardFontDataUrl: VENDOR + "standard_fonts/",
       wasmUrl: VENDOR + "wasm/", iccUrl: VENDOR + "iccs/",
@@ -1191,7 +1192,10 @@ function download(blob, filename) {
   setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
 }
 function exportCsv() {
-  const esc = (v) => { const s = String(v); return /[",\n;]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+  // Text starting with = + - @ would run as a formula when the CSV is opened in Excel
+  // (names can come from the drawing via AI drafting), so it is prefixed with an apostrophe.
+  const cell = (v) => (typeof v === "string" && /^[=+\-@\t\r]/.test(v) ? "'" + v : v);
+  const esc = (v) => { const s = String(cell(v)); return /[",\n;]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
   const text = exportRows().map((r) => r.map(esc).join(",")).join("\r\n");
   download(new Blob(["﻿" + text], { type: "text/csv;charset=utf-8" }), baseName() + "-BOQ.csv");
 }

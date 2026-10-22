@@ -49,3 +49,12 @@ The video is made with Remotion in `_video/`. It draws the same sample sheet A-1
     cd _video && npm ci && npm run render
 
 This writes the site files to `media/` and full-quality 16:9 and 9:16 versions for social media to `_video/out/`. Scene timing, the BOQ values and the soundtrack cues are in `_video/src/timing.json`; `npm run audio` rebuilds the soundtrack from it.
+
+## Security
+
+GitHub Pages cannot send HTTP headers, so each page sets a Content-Security-Policy with a `<meta>` tag:
+
+- Site pages: `SITE_CSP` in `_build/build.py`. Only files from this site may load, with no inline or third-party scripts. The hero demo script is therefore written to `assets/home.js` rather than inlined.
+- The workspace: the `<meta>` tag at the top of `app/index.html`. The only outside connection it allows is `https://api.anthropic.com` for AI drafting.
+
+If you add an analytics script, a font CDN or another API, add its origin to the matching policy, or the browser will block it. The workspace also escapes CSV cells that start with `= + - @`, so names cannot run as Excel formulas.
