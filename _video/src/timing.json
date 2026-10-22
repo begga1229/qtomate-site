@@ -1,0 +1,102 @@
+{
+  "fps": 30,
+  "bpm": 120,
+  "total": 600,
+  "scenes": [
+    {
+      "id": "hook",
+      "start": 0,
+      "dur": 75
+    },
+    {
+      "id": "manual",
+      "start": 75,
+      "dur": 60
+    },
+    {
+      "id": "measure",
+      "start": 135,
+      "dur": 60
+    },
+    {
+      "id": "scan",
+      "start": 195,
+      "dur": 150
+    },
+    {
+      "id": "approve",
+      "start": 345,
+      "dur": 90
+    },
+    {
+      "id": "excel",
+      "start": 435,
+      "dur": 60
+    },
+    {
+      "id": "logo",
+      "start": 495,
+      "dur": 105
+    }
+  ],
+  "scan": {
+    "from": 30,
+    "to": 100,
+    "x0": 20,
+    "x1": 1270
+  },
+  "callouts": [
+    {
+      "key": "ext",
+      "value": 40.0,
+      "decimals": 1,
+      "unit": "u_m",
+      "ax": 140,
+      "ay": 160
+    },
+    {
+      "key": "area",
+      "value": 96.0,
+      "decimals": 1,
+      "unit": "u_m2",
+      "ax": 420,
+      "ay": 220
+    },
+    {
+      "key": "doors",
+      "value": 3,
+      "decimals": 0,
+      "unit": "u_no",
+      "ax": 664,
+      "ay": 280
+    },
+    {
+      "key": "int",
+      "value": 13.0,
+      "decimals": 1,
+      "unit": "u_m",
+      "ax": 900,
+      "ay": 480
+    },
+    {
+      "key": "windows",
+      "value": 4,
+      "decimals": 0,
+      "unit": "u_no",
+      "ax": 1100,
+      "ay": 620
+    }
+  ],
+  "approve": {
+    "rowsIn": 14,
+    "firstTick": 34,
+    "tickEvery": 7,
+    "order": [
+      "area",
+      "ext",
+      "int",
+      "doors",
+      "windows"
+    ]
+  }
+}

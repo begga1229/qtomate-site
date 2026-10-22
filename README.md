@@ -39,3 +39,13 @@ A static, browser-only app: no build step, no server.
 - `app/vendor/`: PDF.js and SheetJS, self-hosted.
 
 When you change `app.js`, `app.css`, `i18n.js` or `snap.js`, bump the `?v=` value in `app/index.html` and in the two imports at the top of `app/app.js`, so browsers load the new files together.
+
+## Promo video (`media/`, `_video/`)
+
+The home page shows a 20-second promo under the hero, one per language: `media/promo-<lang>.mp4` with poster `media/promo-<lang>.jpg`. It plays muted while on screen and does not autoplay for visitors who prefer reduced motion (see `assets/site.js`).
+
+The video is made with Remotion in `_video/`. It draws the same sample sheet A-101 and the same five quantities as the hero demo, and its text in `_video/src/v2/i18n.ts` follows the site copy, so keep the two in step. To re-render (needs Node, Python 3 with NumPy, and ffmpeg):
+
+    cd _video && npm ci && npm run render
+
+This writes the site files to `media/` and full-quality 16:9 and 9:16 versions for social media to `_video/out/`. Scene timing, the BOQ values and the soundtrack cues are in `_video/src/timing.json`; `npm run audio` rebuilds the soundtrack from it.

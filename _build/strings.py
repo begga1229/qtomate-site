@@ -100,6 +100,27 @@ S = {
         "Temsili örnektir, gerçek bir proje değildir. Neyin ölçüldüğünü görmek için bir satır seçin, sonra bir keşif mühendisi gibi onaylayın.",
     ),
 
+    # ---------- promo video ----------
+    "promo_h": (
+        "See it in 20 seconds.",
+        "Посмотрите за 20 секунд.",
+        "20 soniyada ko‘ring.",
+        "20 saniyede görün.",
+    ),
+    "promo_intro": (
+        "From a PDF sheet to an approved bill of quantities: what QtoMate measures, where each number comes from, and who signs it off.",
+        "От листа PDF до утверждённой ведомости объёмов работ: что QtoMate измеряет, откуда берётся каждое число и кто его утверждает.",
+        "PDF varaqdan tasdiqlangan ish hajmlari qaydnomasigacha: QtoMate nimani o‘lchaydi, har bir raqam qayerdan olinadi va uni kim tasdiqlaydi.",
+        "PDF paftasından onaylı metraj cetveline: QtoMate neyi ölçer, her rakam nereden gelir ve onu kim onaylar.",
+    ),
+    "promo_bar": ("QtoMate, 0:20", "QtoMate, 0:20", "QtoMate, 0:20", "QtoMate, 0:20"),
+    "promo_caption": (
+        "Illustrative sample on sheet A-101, the same one as in the demo above. The video plays without sound; turn it on in the player.",
+        "Условный пример на листе A-101, том же, что в демо выше. Видео идёт без звука, его можно включить в плеере.",
+        "A-101 varaqdagi shartli namuna, yuqoridagi demodagi bilan bir xil. Video ovozsiz ijro etiladi, ovozni pleyerda yoqish mumkin.",
+        "A-101 paftasında temsili örnek, yukarıdaki demodakiyle aynı. Video sessiz oynar, sesi oynatıcıdan açabilirsiniz.",
+    ),
+
     # ---------- why ----------
     "why_h": (
         "Measuring is the slowest part of pricing a job.",
